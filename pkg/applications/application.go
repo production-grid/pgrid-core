@@ -3,7 +3,7 @@ package applications
 import (
 	"os"
 
-	"github.com/blockchyp/blockchyp-core/pkg/logging"
+	"github.com/production-grid/pgrid-core/pkg/logging"
 )
 
 // Application is the main entry point for productiong grid app.
