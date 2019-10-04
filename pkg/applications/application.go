@@ -1,8 +1,9 @@
 package applications
 
 import (
-	"os"
-
+	"github.com/production-grid/pgrid-core/pkg/config"
+	"github.com/production-grid/pgrid-core/pkg/database/relational"
+	"github.com/production-grid/pgrid-core/pkg/loaders"
 	"github.com/production-grid/pgrid-core/pkg/logging"
 )
 
@@ -10,9 +11,11 @@ import (
 // Developers configure the application with services and modules,
 // then starts it.
 type Application struct {
-	Name        string
-	Modules     []FeatureModule
-	SchemaFiles []os.File
+	Name              string
+	Modules           []FeatureModule
+	SchemaFiles       []string
+	ConfigLoader      loaders.ResourceLoader
+	CoreConfiguration config.CoreConfiguration
 }
 
 // Start starts the application.
@@ -26,6 +29,16 @@ func (app *Application) Start() {
 		app.handleStartupError(err)
 	}
 
+	err = app.initDatabase()
+
+	if err != nil {
+		app.handleStartupError(err)
+	}
+
+}
+
+func (app *Application) initDatabase() error {
+	return nil
 }
 
 func (app *Application) handleStartupError(err error) {
@@ -73,7 +86,7 @@ func (app *Application) initModule(mod FeatureModule) error {
 
 	if modSchema != nil && len(modSchema) > 0 {
 		if app.SchemaFiles == nil {
-			app.SchemaFiles = make([]os.File, 0)
+			app.SchemaFiles = make([]string, 0)
 		}
 		app.SchemaFiles = append(app.SchemaFiles, modSchema...)
 	}
@@ -90,7 +103,16 @@ func (app *Application) initModule(mod FeatureModule) error {
 // PreMigrate runs the post migration database schema changes, if any.
 func (app *Application) PreMigrate() {
 
+	logging.Infof("Pre migrating Database Schema for %v\n", app.Name)
+
 	err := app.initModules()
+
+	if err != nil {
+		logging.Error(err)
+		logging.Errorln("Pre migration failed due to previous errors.")
+	}
+
+	err = relational.PreMigrate(app.ConfigLoader, app.CoreConfiguration.DatabaseConfiguration, app.SchemaFiles)
 
 	if err != nil {
 		logging.Error(err)
@@ -102,7 +124,16 @@ func (app *Application) PreMigrate() {
 // PostMigrate runs the post migration database schema changes, if any.
 func (app *Application) PostMigrate() {
 
+	logging.Infof("Post migrating Database Schema for %v\n", app.Name)
+
 	err := app.initModules()
+
+	if err != nil {
+		logging.Error(err)
+		logging.Errorln("Post migration failed due to previous errors.")
+	}
+
+	err = relational.PostMigrate(app.ConfigLoader, app.CoreConfiguration.DatabaseConfiguration, app.SchemaFiles)
 
 	if err != nil {
 		logging.Error(err)

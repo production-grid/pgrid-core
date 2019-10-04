@@ -1,8 +1,6 @@
 package security
 
 import (
-	"os"
-
 	"github.com/production-grid/pgrid-core/pkg/applications"
 )
 
@@ -40,7 +38,7 @@ func (mod *Module) AfterModuleInit(app *applications.Application) error {
 }
 
 //SchemaFiles returns the database schema configuration files for this module.
-func (mod *Module) SchemaFiles(app *applications.Application) ([]os.File, error) {
+func (mod *Module) SchemaFiles(app *applications.Application) ([]string, error) {
 
-	return nil, nil
+	return []string{"schema/security.json"}, nil
 }

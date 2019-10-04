@@ -20,7 +20,7 @@ var initOnce sync.Once
 func Init(fields logrus.Fields) {
 	baseLogger = logrus.New()
 
-	baseLogger.SetFormatter(&logrus.JSONFormatter{})
+	baseLogger.SetFormatter(&logrus.TextFormatter{})
 
 	logLevel := os.Getenv("PG_LOG_LEVEL")
 	if logLevel != "" {

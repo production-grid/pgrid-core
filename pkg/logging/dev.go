@@ -1,5 +1,3 @@
-// +build !prod
-
 package logging
 
 import (

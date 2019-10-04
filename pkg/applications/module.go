@@ -1,7 +1,5 @@
 package applications
 
-import "os"
-
 //FeatureModule defines the base methods required to define a feature module
 type FeatureModule interface {
 	Name() string
@@ -9,5 +7,5 @@ type FeatureModule interface {
 	AfterAppInit(*Application) error
 	BeforeModuleInit(*Application) error
 	AfterModuleInit(*Application) error
-	SchemaFiles(*Application) ([]os.File, error)
+	SchemaFiles(*Application) ([]string, error)
 }

@@ -1,0 +1,88 @@
+{
+  "tables": [
+    {
+      "name": "users",
+      "columns": [
+        {
+          "name": "id",
+          "type": "CHAR",
+          "size": 26,
+          "nullable": false,
+          "primaryKey": true
+        },
+        {
+          "name": "email",
+          "type": "VARCHAR",
+          "size": 64,
+          "nullable": true
+        },
+        {
+          "name": "mobile_number",
+          "type": "VARCHAR",
+          "size": 64,
+          "nullable": true
+        },
+        {
+          "name": "first_name",
+          "type": "VARCHAR",
+          "size": 64,
+          "nullable": false
+        },
+        {
+          "name": "last_name",
+          "type": "VARCHAR",
+          "size": 64,
+          "nullable": false
+        },
+        {
+          "name": "password_hash",
+          "type": "VARCHAR",
+          "size": 128,
+          "nullable": false
+        },
+        {
+          "name": "inner_salt",
+          "type": "VARCHAR",
+          "size": 64,
+          "nullable": false
+        },
+        {
+          "name": "is_locked",
+          "type": "BIT",
+          "nullable": false
+        },
+        {
+          "name": "last_login",
+          "type": "TIMESTAMP",
+          "nullable": true
+        },
+        {
+          "name": "reg_date",
+          "type": "TIMESTAMP",
+          "nullable": false
+        },
+        {
+          "name": "permissions",
+          "type": "VARCHAR",
+          "size": 256,
+          "nullable": true
+        },
+        {
+          "name": "is_deleted",
+          "type": "BOOLEAN",
+          "nullable": false,
+          "defaultValue": "false"
+        }
+      ],
+      "indices": [
+        {
+          "name": "unq_user_email",
+          "unique": true,
+          "columnNames": [
+            "email"
+          ]
+        }
+      ]
+    }
+  ]
+}
