@@ -12,16 +12,16 @@ import (
 /*
 CompareOnly performs a non-destructive comparison between the ds and schema file.
 */
-func CompareOnly(ds *sql.DB, loader loaders.ResourceLoader, schemaFiles []string, schemaName string, profile string, changers []SchemaChanger) ([]SchemaChange, error) {
+func CompareOnly(ds *sql.DB, loader loaders.ResourceLoader, schemaFiles []string, changers []SchemaChanger) ([]Change, error) {
 
-	target, err := ReadModelFromSchemaFiles(loader, schemaFiles, profile)
+	target, err := ReadModelFromSchemaFiles(loader, schemaFiles)
 	if err != nil {
 		return nil, err
 	}
 
 	dialecter := &PostgresDialect{}
 
-	source, err := dialecter.ReadCurrentModel(schemaName, ds)
+	source, err := dialecter.ReadCurrentModel(ds)
 	if err != nil {
 		return nil, err
 	}
@@ -30,9 +30,9 @@ func CompareOnly(ds *sql.DB, loader loaders.ResourceLoader, schemaFiles []string
 
 }
 
-func executeSchemaChangers(source Model, target Model, changers []SchemaChanger) ([]SchemaChange, error) {
+func executeSchemaChangers(source Model, target Model, changers []SchemaChanger) ([]Change, error) {
 
-	results := make([]SchemaChange, 0)
+	results := make([]Change, 0)
 
 	for _, changer := range changers {
 		changes, err := changer(source, target)
@@ -52,11 +52,11 @@ func executeSchemaChangers(source Model, target Model, changers []SchemaChanger)
 Compare returns a slice of schema changes required to convert the targetModel
 to the sourceModel.
 */
-func Compare(sourceModel Model, targetModel Model, changers []SchemaChanger, dialecter Dialecter) ([]SchemaChange, error) {
+func Compare(sourceModel Model, targetModel Model, changers []SchemaChanger, dialecter Dialecter) ([]Change, error) {
 
-	var results []SchemaChange
+	var results []Change
 
-	var fkChanges []SchemaChange
+	var fkChanges []Change
 
 	sourceMap := buildTableMap(sourceModel)
 	targetMap := buildTableMap(targetModel)
@@ -88,13 +88,13 @@ func Compare(sourceModel Model, targetModel Model, changers []SchemaChanger, dia
 	// Drops must be performed first, since they may conflict with new
 	// triggers.
 	for _, trigger := range dropTriggers {
-		results = append(results, SchemaChange{
+		results = append(results, Change{
 			ChangeType: Query,
 			Query:      dialecter.DropTriggerQuery(trigger),
 		})
 	}
 	for _, trigger := range createTriggers {
-		results = append(results, SchemaChange{
+		results = append(results, Change{
 			ChangeType: Query,
 			Query:      dialecter.CreateTriggerQuery(trigger),
 		})
@@ -139,11 +139,11 @@ func sameTrigger(srcTrigger, targetTrigger Trigger) bool {
 		srcTrigger.Timing == targetTrigger.Timing
 }
 
-func compareTable(targetTable Table, sourceMap map[string]Table) ([]SchemaChange, []SchemaChange) {
+func compareTable(targetTable Table, sourceMap map[string]Table) ([]Change, []Change) {
 
-	var changes []SchemaChange
+	var changes []Change
 
-	var fkChanges []SchemaChange
+	var fkChanges []Change
 
 	existingTable, exists := sourceMap[targetTable.Name]
 
@@ -181,10 +181,10 @@ func isEquivalentDataType(targetType string, existingType string) bool {
 
 }
 
-func compareTables(existingTable Table, targetTable Table) ([]SchemaChange, []SchemaChange) {
+func compareTables(existingTable Table, targetTable Table) ([]Change, []Change) {
 
-	results := make([]SchemaChange, 0)
-	fkResults := make([]SchemaChange, 0)
+	results := make([]Change, 0)
+	fkResults := make([]Change, 0)
 
 	existingColumnMap := existingTable.ColumnMap()
 
@@ -193,33 +193,33 @@ func compareTables(existingTable Table, targetTable Table) ([]SchemaChange, []Sc
 	for _, targetCol := range targetTable.Columns {
 		existingCol, exists := existingColumnMap[targetCol.Name]
 		if !exists {
-			results = append(results, SchemaChange{ChangeType: AddColumn, Table: targetTable, Column: targetCol})
+			results = append(results, Change{ChangeType: AddColumn, Table: targetTable, Column: targetCol, Reason: "column not present"})
 		} else {
 			existingColumnsSeen[targetCol.Name] = true
 			if !isEquivalentDataType(targetCol.DataType, existingCol.DataType) {
-				results = append(results, SchemaChange{ChangeType: ModifyColumn, Table: targetTable, Column: targetCol})
+				results = append(results, Change{ChangeType: ModifyColumn, Table: targetTable, Column: targetCol, OldColumn: existingCol, Reason: "data type mismatch"})
 			} else if targetCol.Nullable != existingCol.Nullable {
-				results = append(results, SchemaChange{ChangeType: ModifyColumn, Table: targetTable, Column: targetCol})
+				results = append(results, Change{ChangeType: ModifyColumn, Table: targetTable, Column: targetCol, OldColumn: existingCol, Reason: "nullable status"})
 			} else if hasSize(targetCol.DataType) {
 				if targetCol.Size != existingCol.Size {
 					if targetCol.Size < existingCol.Size {
 						logging.Warnf("Ignoring size change for %s since it might truncate data", targetCol.Name)
 						continue
 					}
-					results = append(results, SchemaChange{ChangeType: ModifyColumn, Table: targetTable, Column: targetCol})
+					results = append(results, Change{ChangeType: ModifyColumn, Table: targetTable, Column: targetCol, OldColumn: existingCol, Reason: "size mismatch"})
 				} else if targetCol.Decimal != existingCol.Decimal {
 					logging.Error("Decimal Change")
 					if targetCol.Decimal < existingCol.Decimal {
 						logging.Warnf("Ignoring size change for %s since it might truncate data", targetCol.Name)
 						continue
 					}
-					results = append(results, SchemaChange{ChangeType: ModifyColumn, Table: targetTable, Column: targetCol})
+					results = append(results, Change{ChangeType: ModifyColumn, Table: targetTable, Column: targetCol, OldColumn: existingCol, Reason: "decimal scale mismatch"})
 				} // sizes not equal
 			} // type check
 
 			if targetCol.ForeignKey.Name != "" {
 				if targetCol.ForeignKey.Name != existingCol.ForeignKey.Name {
-					fkResults = append(fkResults, SchemaChange{ChangeType: AddFK, Table: targetTable, Column: targetCol})
+					fkResults = append(fkResults, Change{ChangeType: AddFK, Table: targetTable, Column: targetCol, Reason: "foreign key missing"})
 				}
 			}
 
@@ -232,7 +232,7 @@ func compareTables(existingTable Table, targetTable Table) ([]SchemaChange, []Sc
 	for _, idx := range targetTable.Indices {
 		_, exists := existingIndexMap[idx.Name]
 		if !exists {
-			results = append(results, SchemaChange{ChangeType: CreateIndex, Table: targetTable, Index: idx})
+			results = append(results, Change{ChangeType: CreateIndex, Table: targetTable, Index: idx})
 		}
 	}
 
@@ -240,7 +240,7 @@ func compareTables(existingTable Table, targetTable Table) ([]SchemaChange, []Sc
 	for _, existingCol := range existingTable.Columns {
 		_, seen := existingColumnsSeen[existingCol.Name]
 		if !seen {
-			results = append(results, SchemaChange{ChangeType: DropColumn, Table: targetTable, Column: existingCol})
+			results = append(results, Change{ChangeType: DropColumn, Table: targetTable, Column: existingCol})
 		}
 	}
 
@@ -248,32 +248,32 @@ func compareTables(existingTable Table, targetTable Table) ([]SchemaChange, []Sc
 
 }
 
-func generateCreateIndices(targetTable Table) []SchemaChange {
+func generateCreateIndices(targetTable Table) []Change {
 
-	results := make([]SchemaChange, 0)
+	results := make([]Change, 0)
 
 	for _, idx := range targetTable.Indices {
-		result := SchemaChange{ChangeType: CreateIndex, Table: targetTable, Index: idx}
+		result := Change{ChangeType: CreateIndex, Table: targetTable, Index: idx}
 		results = append(results, result)
 	}
 
 	return results
 }
 
-func generateCreateForeignKeys(targetTable Table) []SchemaChange {
+func generateCreateForeignKeys(targetTable Table) []Change {
 
-	results := make([]SchemaChange, 0)
+	results := make([]Change, 0)
 
 	for _, col := range targetTable.ForeignKeyColumns() {
-		result := SchemaChange{ChangeType: AddFK, Table: targetTable, Column: col}
+		result := Change{ChangeType: AddFK, Table: targetTable, Column: col, PostMigrateOnly: true}
 		results = append(results, result)
 	}
 
 	return results
 }
 
-func generateCreateTable(targetTable Table) SchemaChange {
-	result := SchemaChange{ChangeType: CreateTable, Table: targetTable}
+func generateCreateTable(targetTable Table) Change {
+	result := Change{ChangeType: CreateTable, Table: targetTable}
 	return result
 }
 

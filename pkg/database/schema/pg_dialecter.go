@@ -2,11 +2,10 @@ package schema
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/production-grid/pgrid-core/pkg/logging"
 
 	//used to bring in the postgres driver
 	_ "github.com/lib/pq"
@@ -16,20 +15,66 @@ import (
 type PostgresDialect struct {
 }
 
-/*
-ColumnDefinition assembles a column definition DDL fragment.
-*/
-func (mysql *PostgresDialect) ColumnDefinition(col Column) string {
+func (psql *PostgresDialect) isTypeChange(change Change) bool {
 
-	//TODO convert to string templates if practical
-
-	ddl := col.Name
-	ddl += " "
-	if col.DataType == "AUTOINCREMENT" {
-		ddl += "INT"
-	} else {
-		ddl += col.DataType
+	if change.Column.DataType != psql.translateDDLDataType(change.OldColumn) {
+		return true
 	}
+	if change.Column.Size != change.OldColumn.Size {
+		return true
+	}
+	if change.Column.Decimal != change.OldColumn.Decimal {
+		return true
+	}
+	return false
+
+}
+
+//ModifyColumn assembles a modify column command
+func (psql *PostgresDialect) ModifyColumn(change Change) string {
+
+	sql := "ALTER TABLE "
+	sql += change.Table.Name
+	sql += " ALTER COLUMN "
+	sql += change.Column.Name
+	if psql.isTypeChange(change) {
+		sql += " TYPE "
+		sql += psql.translateDDLDataType(change.Column)
+		if change.Column.Size > 0 {
+			sql += "("
+			sql += strconv.Itoa(change.Column.Size)
+			if change.Column.Decimal > 0 {
+				sql += ","
+				sql += strconv.Itoa(change.Column.Decimal)
+			}
+			sql += ")"
+		}
+	}
+	if change.Column.Nullable != change.OldColumn.Nullable {
+		if change.Column.Nullable {
+			sql += " DROP NOT NULL"
+		} else {
+			sql += " SET NOT NULL"
+		}
+	}
+
+	return sql
+
+}
+
+func (psql *PostgresDialect) translateDDLDataType(col Column) string {
+
+	if col.DataType == "TIMESTAMP" {
+		return "TIMESTAMP WITH TIME ZONE"
+	}
+	return col.DataType
+
+}
+
+func (psql *PostgresDialect) columnTypeDefinition(col Column) string {
+
+	ddl := psql.translateDDLDataType(col)
+
 	/*
 		We permit data types to be declared with sizes.
 		For example DECIMAL (10, 7).  This check bypasses
@@ -49,9 +94,6 @@ func (mysql *PostgresDialect) ColumnDefinition(col Column) string {
 	if !col.Nullable {
 		ddl += " NOT NULL"
 	}
-	if col.DataType == "AUTOINCREMENT" {
-		ddl += " AUTO_INCREMENT UNIQUE"
-	}
 	if len(col.DefaultValue) > 0 {
 		ddl += " DEFAULT "
 		if col.DataType != "VARCHAR" {
@@ -65,9 +107,23 @@ func (mysql *PostgresDialect) ColumnDefinition(col Column) string {
 }
 
 /*
+ColumnDefinition assembles a column definition DDL fragment.
+*/
+func (psql *PostgresDialect) ColumnDefinition(col Column) string {
+
+	//TODO convert to string templates if practical
+
+	ddl := col.Name
+	ddl += " "
+	ddl += psql.columnTypeDefinition(col)
+
+	return ddl
+}
+
+/*
 PrimaryKeyDefinition assembles the DDL query to create a new foreign key.
 */
-func (mysql *PostgresDialect) PrimaryKeyDefinition(table Table) string {
+func (psql *PostgresDialect) PrimaryKeyDefinition(table Table) string {
 
 	pkCols := make([]string, 0)
 
@@ -91,7 +147,7 @@ func (mysql *PostgresDialect) PrimaryKeyDefinition(table Table) string {
 /*
 ForeignKeyDefinition assembles the DDL query to create a new foreign key.
 */
-func (mysql *PostgresDialect) ForeignKeyDefinition(col Column) string {
+func (psql *PostgresDialect) ForeignKeyDefinition(col Column) string {
 
 	ddl := "CONSTRAINT "
 	ddl += col.ForeignKey.Name
@@ -107,7 +163,7 @@ func (mysql *PostgresDialect) ForeignKeyDefinition(col Column) string {
 /*
 IndexDefinition assembles the DDL query to create a new index.
 */
-func (mysql *PostgresDialect) IndexDefinition(table Table, index Index) string {
+func (psql *PostgresDialect) IndexDefinition(table Table, index Index) string {
 
 	ddl := ""
 	if index.Unique {
@@ -127,11 +183,11 @@ func (mysql *PostgresDialect) IndexDefinition(table Table, index Index) string {
 /*
 ReadCurrentModel reads the full database model for the given db.
 */
-func (mysql *PostgresDialect) ReadCurrentModel(schemaName string, db *sql.DB) (*Model, error) {
+func (psql *PostgresDialect) ReadCurrentModel(db *sql.DB) (*Model, error) {
 
 	var model Model
 
-	tables, err := mysql.ReadTableList(schemaName, db)
+	tables, err := psql.ReadTableList(db)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +195,7 @@ func (mysql *PostgresDialect) ReadCurrentModel(schemaName string, db *sql.DB) (*
 	tableModels := make([]Table, 0)
 
 	for _, table := range tables {
-		tableModel, err := mysql.ReadTableModel(db, table)
+		tableModel, err := psql.ReadTableModel(db, table)
 		if err != nil {
 			return nil, err
 		}
@@ -158,41 +214,76 @@ func (mysql *PostgresDialect) ReadCurrentModel(schemaName string, db *sql.DB) (*
 	return &model, nil
 }
 
+func (psql *PostgresDialect) translateDataType(psqlType string) string {
+
+	switch psqlType {
+	case "character":
+		return "CHAR"
+	case "character varying":
+		return "VARCHAR"
+	case "timestamp", "timestamp with time zone":
+		return "TIMESTAMP"
+	case "numeric":
+		return "DECIMAL"
+	}
+
+	return psqlType
+
+}
+
 /*
-ReadTableModel reads the full table model for a given table name, which means columns, etc.
+ReadTableModel reads the full table model for a given table name, which means columns, keys, etc.
 */
-func (mysql *PostgresDialect) ReadTableModel(db *sql.DB, tableName string) (Table, error) {
+func (psql *PostgresDialect) ReadTableModel(db *sql.DB, tableName string) (Table, error) {
 
 	result := Table{Name: tableName}
 
-	rows, err := db.Query("describe " + tableName)
+	pks, err := getPrimaryKeys(db, &result)
+
+	if err != nil {
+		return result, err
+	}
+
+	fks, err := readForeignKeys(db, result)
+
+	if err != nil {
+		return result, err
+	}
+
+	rows, err := db.Query("SELECT column_name, data_type, is_nullable, column_default, character_maximum_length, numeric_precision, numeric_scale FROM information_schema.columns where TABLE_NAME = $1", tableName)
 	defer rows.Close()
 	if err != nil {
 		return result, err
 	}
 	cols := make([]Column, 0)
 	for rows.Next() {
-		var colName, datatype, nullable, pk, defaultValue, extra *string
-		err = rows.Scan(&colName, &datatype, &nullable, &pk, &defaultValue, &extra)
+		var colName, datatype, nullable, defaultValue *string
+		var charLen, numPrec, numScale *int
+		err = rows.Scan(&colName, &datatype, &nullable, &defaultValue, &charLen, &numPrec, &numScale)
 		if err != nil {
 			return result, err
 		}
 		col := Column{Name: *colName}
-		col.PrimaryKey = (*pk) == "PRI"
 		col.Nullable = (*nullable) == "YES"
-
-		//parse the datatype stuff
-		tokens := strings.FieldsFunc(*datatype, parenSplit)
-		col.DataType = tokens[0]
-		if len(tokens) > 1 {
-			col.Size, err = strconv.Atoi(tokens[1])
+		col.DataType = psql.translateDataType(*datatype)
+		if charLen != nil && *charLen > 0 {
+			col.Size = *charLen
 		}
-		if len(tokens) > 2 {
-			col.Decimal, err = strconv.Atoi(tokens[2])
+		if numPrec != nil && *numPrec > 0 {
+			col.Size = *numPrec
+		}
+		if numScale != nil && *numScale > 0 {
+			col.Decimal = *numScale
 		}
 
-		if (extra != nil) && (*extra == "auto_increment") {
-			col.DataType = "AUTOINCREMENT"
+		for _, pkCol := range pks {
+			if pkCol == col.Name {
+				col.PrimaryKey = true
+			}
+		}
+		fk, ok := fks[col.Name]
+		if ok {
+			col.ForeignKey = fk
 		}
 
 		if err != nil {
@@ -202,8 +293,6 @@ func (mysql *PostgresDialect) ReadTableModel(db *sql.DB, tableName string) (Tabl
 	}
 
 	result.Columns = cols
-
-	result, err = readForeignKeys(db, result)
 
 	if err != nil {
 		return result, err
@@ -221,61 +310,111 @@ func (mysql *PostgresDialect) ReadTableModel(db *sql.DB, tableName string) (Tabl
 
 func readIndexes(db *sql.DB, table Table) (Table, error) {
 
-	rows, err := db.Query("show index from " + table.Name)
+	query := `select indexname, indexdef
+						from pg_indexes where tablename = $1`
+
+	rows, err := db.Query(query, table.Name)
 	defer rows.Close()
 	if err != nil {
 		return table, err
 	}
 
-	fkMap := make(map[string]bool)
-	//pre cache foreign keys so we know to skip them
-	for _, col := range table.ForeignKeyColumns() {
-		if col.ForeignKey.Name != "" {
-			fkMap[col.ForeignKey.Name] = true
-		}
-	}
-
-	idxMap := make(map[string]Index)
-
+	idxSlice := make([]Index, 0)
+	var indexName, indexDef *string
 	for rows.Next() {
-		var tableName, keyName, columnName, collation, subPart, nullable, indexType, comment, indexComment *string
-		var nonUnique, packed *bool
-		var seqInIndex, cardinality *int
-		err = rows.Scan(&tableName, &nonUnique, &keyName, &seqInIndex, &columnName, &collation, &cardinality, &subPart, &packed, &nullable, &indexType, &comment, &indexComment)
+		err = rows.Scan(&indexName, &indexDef)
 		if err != nil {
 			return table, err
 		}
-		//skip the primary
-		if *keyName == "PRIMARY" {
+		if strings.HasSuffix(*indexName, "_pkey") {
+			//skip primary keys
 			continue
 		}
-		_, exists := fkMap[*keyName]
-		if exists {
-			continue
+		index := Index{
+			Name:   *indexName,
+			Unique: strings.Contains(*indexDef, "UNIQUE"),
 		}
+		//parse column names
+		derefDef := *indexDef
+		parenIndex := strings.Index(derefDef, "(")
+		columnList := derefDef[parenIndex+1 : len(derefDef)-1]
+		columns := strings.Split(columnList, ",")
 
-		idx, exists := idxMap[*keyName]
-		if !exists {
-			idx = Index{}
-			idx.Name = *keyName
-			idx.Unique = !*nonUnique
-			idx.ColumnNames = make([]string, 0)
+		for idx, col := range columns {
+			columns[idx] = strings.TrimSpace(col)
 		}
-		idx.ColumnNames = append(idx.ColumnNames, *columnName)
-		idxMap[idx.Name] = idx
+		index.ColumnNames = columns
 
+		idxSlice = append(idxSlice, index)
 	}
 
-	idxSlice := make([]Index, 0)
-	for _, v := range idxMap {
-		idxSlice = append(idxSlice, v)
-	}
 	table.Indices = idxSlice
 	return table, nil
 }
 
-func readForeignKeys(db *sql.DB, table Table) (Table, error) {
-	return processCreateTable(db, table)
+func getPrimaryKeys(db *sql.DB, table *Table) ([]string, error) {
+
+	query := `SELECT c.column_name
+						FROM information_schema.table_constraints tc
+						JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_name)
+						JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema
+						AND tc.table_name = c.table_name AND ccu.column_name = c.column_name
+						WHERE constraint_type = 'PRIMARY KEY' and tc.table_name = $1`
+
+	rows, err := db.Query(query, table.Name)
+	defer rows.Close()
+	if err != nil {
+		return nil, err
+	}
+	results := make([]string, 0)
+	var name *string
+	for rows.Next() {
+		rows.Scan(&name)
+		results = append(results, *name)
+	}
+
+	return results, nil
+
+}
+
+func readForeignKeys(db *sql.DB, table Table) (map[string]ForeignKey, error) {
+
+	query := `SELECT
+						    tc.constraint_name,
+						    kcu.column_name,
+						    ccu.table_name AS foreign_table_name,
+						    ccu.column_name AS foreign_column_name
+						FROM
+						    information_schema.table_constraints AS tc
+						    JOIN information_schema.key_column_usage AS kcu
+						      ON tc.constraint_name = kcu.constraint_name
+						      AND tc.table_schema = kcu.table_schema
+						    JOIN information_schema.constraint_column_usage AS ccu
+						      ON ccu.constraint_name = tc.constraint_name
+						      AND ccu.table_schema = tc.table_schema
+						WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name=$1`
+
+	rows, err := db.Query(query, table.Name)
+	defer rows.Close()
+	if err != nil {
+		return nil, err
+	}
+	fks := make(map[string]ForeignKey)
+	var name, columnName, foreignTable, foreignColumn *string
+	for rows.Next() {
+		rows.Scan(&name, &columnName, &foreignTable, &foreignColumn)
+		if *foreignColumn != "id" {
+			return nil, errors.New("invalid foreign key column (must be 'id')")
+		}
+		fk := ForeignKey{
+			Name:      *name,
+			TableName: *foreignTable,
+		}
+		fks[*columnName] = fk
+	}
+
+	return fks, nil
+
 }
 
 func processCreateTable(db *sql.DB, table Table) (Table, error) {
@@ -339,11 +478,11 @@ func parenSplit(r rune) bool {
 /*
 ReadTableList returns a slice of all tables in the given DB.
 */
-func (mysql *PostgresDialect) ReadTableList(schemaName string, db *sql.DB) ([]string, error) {
+func (psql *PostgresDialect) ReadTableList(db *sql.DB) ([]string, error) {
 
 	results := make([]string, 0)
 
-	rows, err := db.Query("select tablename from pg_catalog.pg_tables where schemaname = $1", schemaName)
+	rows, err := db.Query("select tablename from pg_catalog.pg_tables where schemaname = 'public'")
 	defer rows.Close()
 	if err != nil {
 		fmt.Println(err.Error())
@@ -357,12 +496,11 @@ func (mysql *PostgresDialect) ReadTableList(schemaName string, db *sql.DB) ([]st
 		}
 		results = append(results, tableName)
 	}
-	logging.LogJSON(results)
 	return results, nil
 }
 
 // ReadTriggers reads the triggers for a table.
-func (mysql *PostgresDialect) ReadTriggers(db *sql.DB) ([]Trigger, error) {
+func (psql *PostgresDialect) ReadTriggers(db *sql.DB) ([]Trigger, error) {
 	results := make([]Trigger, 0)
 
 	rows, err := db.Query(
@@ -393,7 +531,7 @@ WHERE TRIGGER_SCHEMA = DATABASE()`)
 }
 
 // CreateTriggerQuery generates a query for creating a trigger.
-func (mysql *PostgresDialect) CreateTriggerQuery(trigger Trigger) string {
+func (psql *PostgresDialect) CreateTriggerQuery(trigger Trigger) string {
 	return fmt.Sprintf(
 		`CREATE TRIGGER %s
 %s %s
@@ -406,6 +544,6 @@ END`,
 }
 
 // DropTriggerQuery generates a query for deleting a trigger.
-func (mysql *PostgresDialect) DropTriggerQuery(trigger Trigger) string {
+func (psql *PostgresDialect) DropTriggerQuery(trigger Trigger) string {
 	return fmt.Sprintf("DROP TRIGGER %s", trigger.Name)
 }

@@ -1,0 +1,23 @@
+{
+  "profiles": {
+    "no_delete_protect": {
+      "enforce_soft_deletes": false
+    },
+    "delete_protect": {
+      "enforce_soft_deletes": true
+    }
+  },
+  "tables" : [
+    {
+      "name": "test_table",
+      "columns": [
+        {
+          "name": "is_deleted",
+          "type" : "BIT",
+          "nullable" : false,
+          "defaultValue": "0"
+        }
+      ]
+    }
+  ]
+}

@@ -52,6 +52,12 @@
           "nullable": false
         },
         {
+          "name": "time_zone",
+          "type": "VARCHAR",
+          "size": 32,
+          "nullable": false
+        },
+        {
           "name": "last_login",
           "type": "TIMESTAMP",
           "nullable": true

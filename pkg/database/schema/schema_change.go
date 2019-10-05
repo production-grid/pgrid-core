@@ -3,23 +3,23 @@ package schema
 /*
 SchemaChanger can execute arbitrary code and generate schema changes.
 */
-type SchemaChanger func(sourceModel Model, targetModel Model) ([]SchemaChange, error)
+type SchemaChanger func(sourceModel Model, targetModel Model) ([]Change, error)
 
 /*
 PostMigrator is designed to clean up post migration.
 */
 type PostMigrator func(sourceModel Model, targetModel Model) error
 
-/*
-SchemaChange models a single schema change operation.
-*/
-type SchemaChange struct {
+//Change models a single schema change operation.
+type Change struct {
 	PostMigrateOnly bool
 	ChangeType      ChangeType
 	Table           Table
 	Index           Index
 	Column          Column
+	OldColumn       Column
 	Query           string
+	Reason          string
 }
 
 /*

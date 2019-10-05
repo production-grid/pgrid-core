@@ -32,7 +32,6 @@ DefaultMigrator is the default implementation of the Migrator interface.
 type DefaultMigrator struct {
 	Datasource *sql.DB
 	Dialecter  Dialecter
-	Profile    string
 }
 
 /*
@@ -56,12 +55,12 @@ func (migrator *DefaultMigrator) Migrate(loader loaders.ResourceLoader, schemaFi
 		}
 	*/
 
-	target, err := ReadModelFromSchemaFiles(loader, schemaFiles, migrator.Profile)
+	target, err := ReadModelFromSchemaFiles(loader, schemaFiles)
 	if err != nil {
 		return err
 	}
 
-	source, err := migrator.Dialecter.ReadCurrentModel(schemaName, migrator.Datasource)
+	source, err := migrator.Dialecter.ReadCurrentModel(migrator.Datasource)
 	if err != nil {
 		return err
 	}
@@ -87,9 +86,9 @@ func (migrator *DefaultMigrator) Migrate(loader loaders.ResourceLoader, schemaFi
 	return nil
 }
 
-func (migrator *DefaultMigrator) runSchemaChangers(changers []SchemaChanger) []SchemaChange {
+func (migrator *DefaultMigrator) runSchemaChangers(changers []SchemaChanger) []Change {
 
-	changes := make([]SchemaChange, 0)
+	changes := make([]Change, 0)
 
 	return changes
 
@@ -108,18 +107,18 @@ func (migrator *DefaultMigrator) PostMigrate(schemaFiles string, changers []Sche
 }
 
 //GeneratePreMigrationScript generates a script with the database changes that can be run with the update
-func (migrator *DefaultMigrator) GeneratePreMigrationScript(changes []SchemaChange, changers []SchemaChanger) (*string, error) {
+func (migrator *DefaultMigrator) GeneratePreMigrationScript(changes []Change, changers []SchemaChanger) (*string, error) {
 
 	return nil, nil
 }
 
 //GeneratePostMigrationScript generates a script with the changes that can be run once all software nodes are updated.
-func (migrator *DefaultMigrator) GeneratePostMigrationScript(changes []SchemaChange, changers []SchemaChanger) (*string, error) {
+func (migrator *DefaultMigrator) GeneratePostMigrationScript(changes []Change, changers []SchemaChanger) (*string, error) {
 
 	return nil, nil
 }
 
-func (migrator *DefaultMigrator) executeChangeSets(changes []SchemaChange) error {
+func (migrator *DefaultMigrator) executeChangeSets(changes []Change) error {
 
 	for _, change := range changes {
 		var err error
@@ -150,7 +149,7 @@ func (migrator *DefaultMigrator) executeChangeSets(changes []SchemaChange) error
 
 }
 
-func (migrator *DefaultMigrator) executeCreateTable(change SchemaChange) error {
+func (migrator *DefaultMigrator) executeCreateTable(change Change) error {
 
 	//TODO method too long - should be caught once we add uncle bob style checking
 
@@ -186,7 +185,7 @@ func (migrator *DefaultMigrator) executeCreateTable(change SchemaChange) error {
 	return nil
 }
 
-func (migrator *DefaultMigrator) executeQuery(change SchemaChange) error {
+func (migrator *DefaultMigrator) executeQuery(change Change) error {
 
 	logging.Infof("Executing Query Change: %s", change.Query)
 
@@ -200,7 +199,7 @@ func (migrator *DefaultMigrator) executeQuery(change SchemaChange) error {
 
 }
 
-func (migrator *DefaultMigrator) executeAddForeignKey(change SchemaChange) error {
+func (migrator *DefaultMigrator) executeAddForeignKey(change Change) error {
 
 	logging.Infof("Adding Foreign Key: %s:%s\n", change.Table.Name, change.Column.ForeignKey.Name)
 
@@ -220,14 +219,11 @@ func (migrator *DefaultMigrator) executeAddForeignKey(change SchemaChange) error
 	return nil
 }
 
-func (migrator *DefaultMigrator) executeModifyColumn(change SchemaChange) error {
+func (migrator *DefaultMigrator) executeModifyColumn(change Change) error {
 
 	logging.Infof("Modifying Column: %s:%s\n", change.Table.Name, change.Column.Name)
 
-	sql := "alter table "
-	sql += change.Table.Name
-	sql += " modify column "
-	sql += migrator.Dialecter.ColumnDefinition(change.Column)
+	sql := migrator.Dialecter.ModifyColumn(change)
 
 	logging.Infoln("Executing:", sql)
 
@@ -240,7 +236,7 @@ func (migrator *DefaultMigrator) executeModifyColumn(change SchemaChange) error 
 	return nil
 }
 
-func (migrator *DefaultMigrator) executeAddColumn(change SchemaChange) error {
+func (migrator *DefaultMigrator) executeAddColumn(change Change) error {
 
 	logging.Infof("Adding Column: %s:%s\n", change.Table.Name, change.Column.Name)
 
@@ -260,7 +256,7 @@ func (migrator *DefaultMigrator) executeAddColumn(change SchemaChange) error {
 	return nil
 }
 
-func (migrator *DefaultMigrator) executeCreateIndex(change SchemaChange) error {
+func (migrator *DefaultMigrator) executeCreateIndex(change Change) error {
 
 	logging.Infof("Creating Table: %s\n", change.Table.Name)
 
@@ -280,12 +276,12 @@ func (migrator *DefaultMigrator) executeCreateIndex(change SchemaChange) error {
 /*
 ReadModelFromSchemaFiles reads a schema file and loads it into a model struct.
 */
-func ReadModelFromSchemaFiles(loader loaders.ResourceLoader, schemaFiles []string, profile string) (*Model, error) {
+func ReadModelFromSchemaFiles(loader loaders.ResourceLoader, schemaFiles []string) (*Model, error) {
 
 	tables := make([]Table, 0)
 
 	for _, schemaFile := range schemaFiles {
-		newTables, err := ReadModelFromSchemaFile(loader, schemaFile, profile)
+		newTables, err := ReadModelFromSchemaFile(loader, schemaFile)
 		if err != nil {
 			return nil, err
 		}
@@ -297,8 +293,6 @@ func ReadModelFromSchemaFiles(loader loaders.ResourceLoader, schemaFiles []strin
 	model := Model{}
 	model.Tables = tables
 
-	model = loadProfile(model, profile)
-
 	return &model, nil
 
 }
@@ -306,7 +300,7 @@ func ReadModelFromSchemaFiles(loader loaders.ResourceLoader, schemaFiles []strin
 /*
 ReadModelFromSchemaFile reads a schema file and loads it into a model struct.
 */
-func ReadModelFromSchemaFile(loader loaders.ResourceLoader, schemaFile string, profile string) ([]Table, error) {
+func ReadModelFromSchemaFile(loader loaders.ResourceLoader, schemaFile string) ([]Table, error) {
 	b, err := loader.Bytes(schemaFile)
 	if err != nil {
 		return nil, err
@@ -357,55 +351,6 @@ func ReadModelFromSchemaFile(loader loaders.ResourceLoader, schemaFile string, p
 
 	return tables, nil
 
-}
-
-// loadProfile loads profile specific changes to the target schema.
-func loadProfile(model Model, profile string) Model {
-	if profile == "" {
-		return model
-	}
-
-	profileOpts, ok := model.Profiles[profile]
-	if !ok {
-		logging.Warnf("Unrecognized schematron profile: %s", profile)
-		return model
-	}
-
-	logging.Infof("Using schematron profile: %+v", profile)
-
-	// Add a trigger to each table with an is_deleted column to prevent hard
-	// deletes.
-	if profileOpts.EnforceSoftDeletes {
-		for _, table := range model.Tables {
-			if isSoftDeleteTable(table) {
-				model.Triggers = append(model.Triggers, Trigger{
-					Name:      table.Name + "_enforce_soft_delete",
-					Event:     "DELETE",
-					Table:     table.Name,
-					Statement: "SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'DELETE not allowed'",
-					Timing:    "BEFORE",
-				})
-			}
-		}
-	}
-
-	return model
-}
-
-func isSoftDeleteTable(table Table) bool {
-	if table.AllowHardDelete {
-		return false
-	}
-
-	const softDeleteColumn = "is_deleted"
-
-	for _, column := range table.Columns {
-		if column.Name == softDeleteColumn {
-			return true
-		}
-	}
-
-	return false
 }
 
 //sanitizeTable handles weird post processing edge cases

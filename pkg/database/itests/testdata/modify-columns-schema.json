@@ -1,0 +1,339 @@
+{
+  "tables" : [ {
+    "name" : "roles",
+    "columns" : [ {
+      "name" : "id",
+      "type" : "CHAR",
+      "size" : 32,
+      "nullable" : false,
+      "primaryKey" : true
+    }, {
+      "name" : "name",
+      "type" : "VARCHAR",
+      "size" : 128,
+      "nullable" : false
+    }, {
+      "name" : "test_float",
+      "type" : "DECIMAL",
+      "size" :  11,
+      "decimal": 9,
+      "nullable" : false
+    }, {
+      "name" : "new_column",
+      "type" : "VARCHAR",
+      "size" : 64,
+      "nullable" : false
+    } ]
+  }, {
+    "name" : "role_permission",
+    "columns" : [ {
+      "name" : "role_id",
+      "type" : "CHAR",
+      "size" : 32,
+      "nullable" : false,
+      "primaryKey" : true,
+      "foreignKey" : {
+        "tableName" : "roles",
+        "name" : "fk_role_permission"
+      }
+    }, {
+      "name" : "permission_code",
+      "type" : "VARCHAR",
+      "size" : 64,
+      "nullable" : false,
+      "primaryKey" : true
+    } ]
+  }, {
+    "name" : "site",
+    "columns" : [ {
+      "name" : "id",
+      "type" : "CHAR",
+      "size" : 32,
+      "nullable" : false,
+      "primaryKey" : true
+    }, {
+      "name" : "subdomain",
+      "type" : "VARCHAR",
+      "size" : 64,
+      "nullable" : false
+    }, {
+      "name" : "title",
+      "type" : "VARCHAR",
+      "size" : 64,
+      "nullable" : false
+    }, {
+      "name" : "theme_id",
+      "type" : "VARCHAR",
+      "size" : 64,
+      "nullable" : false
+    }, {
+      "name" : "is_cart_bar_enabled",
+      "type" : "BIT",
+      "size" : 1,
+      "nullable" : true
+    }, {
+      "name" : "is_footer_enabled",
+      "type" : "BIT",
+      "size" : 1,
+      "nullable" : true
+    }, {
+      "name" : "footer_left",
+      "type" : "VARCHAR",
+      "size" : 255,
+      "nullable" : true
+    }, {
+      "name" : "footer_right",
+      "type" : "VARCHAR",
+      "size" : 255,
+      "nullable" : true
+    }, {
+      "name" : "logo_id",
+      "type" : "CHAR",
+      "size" : 32,
+      "nullable" : false
+    } ],
+    "indices" : [ {
+      "name" : "unq_subdomain",
+      "unique" : true,
+      "columnNames" : [ "subdomain" ]
+    } ]
+  }, {
+    "name" : "site_domain",
+    "columns" : [ {
+      "name" : "domain_name",
+      "type" : "VARCHAR",
+      "size" : 64,
+      "nullable" : false,
+      "primaryKey" : true
+    }, {
+      "name" : "site_id",
+      "type" : "CHAR",
+      "size" : 32,
+      "nullable" : false,
+      "primaryKey" : true,
+      "foreignKey" : {
+        "tableName" : "site",
+        "name" : "fk_site_domain"
+      }
+    } ]
+  }, {
+    "name" : "site_image",
+    "columns" : [ {
+      "name" : "id",
+      "type" : "CHAR",
+      "size" : 32,
+      "nullable" : false,
+      "primaryKey" : true
+    }, {
+      "name" : "site_id",
+      "type" : "CHAR",
+      "size" : 32,
+      "nullable" : true,
+      "foreignKey" : {
+        "tableName" : "site",
+        "name" : "fk_site_image"
+      }
+    }, {
+      "name" : "uploaded_user_id",
+      "type" : "CHAR",
+      "size" : 32,
+      "nullable" : false
+    }, {
+      "name" : "shared",
+      "type" : "BIT",
+      "size" : 1,
+      "nullable" : false
+    }, {
+      "name" : "caption",
+      "type" : "VARCHAR",
+      "size" : 256,
+      "nullable" : true
+    }, {
+      "name" : "storage_key",
+      "type" : "VARCHAR",
+      "size" : 128,
+      "nullable" : true
+    }, {
+      "name" : "upload_date",
+      "type" : "TIMESTAMP",
+      "nullable" : false
+    }, {
+      "name" : "image_size",
+      "type" : "INTEGER",
+      "nullable" : false
+    }, {
+      "name" : "thumbnail_key",
+      "type" : "VARCHAR",
+      "size" : 128,
+      "nullable" : true
+    }, {
+      "name" : "tiny_thumbnail_key",
+      "type" : "VARCHAR",
+      "size" : 128,
+      "nullable" : true
+    }, {
+      "name" : "alternate_sizes",
+      "type" : "TEXT",
+      "nullable" : true
+    } ]
+  }, {
+    "name" : "site_image_tags",
+    "columns" : [ {
+      "name" : "site_image_id",
+      "type" : "CHAR",
+      "size" : 32,
+      "nullable" : false,
+      "primaryKey" : true,
+      "foreignKey" : {
+        "tableName" : "site_image",
+        "name" : "fk_site_image_tags"
+      }
+    }, {
+      "name" : "tag",
+      "type" : "VARCHAR",
+      "size" : 64,
+      "nullable" : false,
+      "primaryKey" : true
+    } ]
+  }, {
+    "name" : "site_page",
+    "columns" : [ {
+      "name" : "id",
+      "type" : "CHAR",
+      "size" : 32,
+      "nullable" : false,
+      "primaryKey" : true
+    }, {
+      "name" : "site_id",
+      "type" : "CHAR",
+      "size" : 32,
+      "nullable" : true,
+      "foreignKey" : {
+        "tableName" : "site",
+        "name" : "fk_site_page"
+      }
+    }, {
+      "name" : "path_info",
+      "type" : "VARCHAR",
+      "size" : 255,
+      "nullable" : false
+    }, {
+      "name" : "page_title",
+      "type" : "VARCHAR",
+      "size" : 128,
+      "nullable" : false
+    }, {
+      "name" : "date_created",
+      "type" : "TIMESTAMP",
+      "nullable" : false
+    }, {
+      "name" : "another_date",
+      "type" : "TIMESTAMP",
+      "nullable" : false
+    }, {
+      "name" : "created_by_user_id",
+      "type" : "CHAR",
+      "size" : 32,
+      "nullable" : false,
+      "foreignKey" : {
+        "tableName" : "user",
+        "name" : "fk_site_page_created_user"
+      }
+    }, {
+      "name" : "another_user_id",
+      "type" : "CHAR",
+      "size" : 32,
+      "nullable" : false
+    }, {
+      "name" : "page_type",
+      "type" : "VARCHAR",
+      "size" : 128,
+      "nullable" : false
+    }, {
+      "name" : "is_enabled",
+      "type" : "BIT",
+      "size" : 1,
+      "nullable" : false
+    }, {
+      "name" : "content",
+      "type" : "TEXT",
+      "nullable" : true
+    } ],
+    "indices" : [ {
+      "name" : "unq_site_path_info",
+      "unique" : true,
+      "columnNames" : [ "site_id", "path_info" ]
+    } ]
+  }, {
+    "name" : "users",
+    "columns" : [ {
+      "name" : "id",
+      "type" : "CHAR",
+      "size" : 32,
+      "nullable" : false,
+      "primaryKey" : true
+    }, {
+      "name" : "email",
+      "type" : "VARCHAR",
+      "size" : 64,
+      "nullable" : true
+    }, {
+      "name" : "mobile_number",
+      "type" : "VARCHAR",
+      "size" : 64,
+      "nullable" : false
+    }, {
+      "name" : "first_name",
+      "type" : "VARCHAR",
+      "size" : 64,
+      "nullable" : false
+    }, {
+      "name" : "last_name",
+      "type" : "VARCHAR",
+      "size" : 64,
+      "nullable" : false
+    }, {
+      "name" : "password_hash",
+      "type" : "VARCHAR",
+      "size" : 128,
+      "nullable" : false
+    }, {
+      "name" : "inner_salt",
+      "type" : "VARCHAR",
+      "size" : 64,
+      "nullable" : false
+    } ],
+    "indices" : [ {
+      "name" : "unq_user_email",
+      "unique" : true,
+      "columnNames" : [ "email" ]
+    }, {
+      "name" : "unq_user_mobile_number",
+      "unique" : true,
+      "columnNames" : [ "mobile_number" ]
+    } ]
+  }, {
+    "name" : "user_role",
+    "columns" : [ {
+      "name" : "user_id",
+      "type" : "CHAR",
+      "size" : 32,
+      "nullable" : false,
+      "primaryKey" : true,
+      "foreignKey" : {
+        "tableName" : "users",
+        "name" : "fk_user_role_user"
+      }
+    }, {
+      "name" : "role_id",
+      "type" : "CHAR",
+      "size" : 32,
+      "nullable" : false,
+      "primaryKey" : true,
+      "foreignKey" : {
+        "tableName" : "roles",
+        "name" : "fk_user_role_role"
+      }
+    } ]
+  } ]
+}

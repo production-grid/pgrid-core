@@ -9,14 +9,6 @@ type Model struct {
 	Tables   []Table            `json:"tables"`
 	Queries  []ConditionalQuery `json:"queries"`
 	Triggers []Trigger          `json:"triggers"`
-	Profiles map[string]Profile `json:"profiles"`
-}
-
-// Profile contains environment overrides for a schema.
-type Profile struct {
-	// EnforceSoftDeletes creates triggers on tables with an is_deleted column
-	// to prevent hard deletes.
-	EnforceSoftDeletes bool `json:"enforce_soft_deletes"`
 }
 
 // Trigger is a callback function performed when a condition is matched.
@@ -36,9 +28,6 @@ type Table struct {
 	CloneNames string   `json:"cloneNames"`
 	Columns    []Column `json:"columns"`
 	Indices    []Index  `json:"indices"`
-
-	// AllowHardDelete overrides a hard delete prevention trigger.
-	AllowHardDelete bool `json:"allowHardDelete"`
 }
 
 /*
@@ -110,11 +99,12 @@ type IndexHaver interface {
 Dialecter defines the interface for RDBMS specific dialects.
 */
 type Dialecter interface {
+	ModifyColumn(Change) string
 	ColumnDefinition(Column) string
 	PrimaryKeyDefinition(Table) string
 	ForeignKeyDefinition(Column) string
 	IndexDefinition(Table, Index) string
-	ReadCurrentModel(schemaName string, ds *sql.DB) (*Model, error)
+	ReadCurrentModel(ds *sql.DB) (*Model, error)
 	CreateTriggerQuery(Trigger) string
 	DropTriggerQuery(Trigger) string
 }

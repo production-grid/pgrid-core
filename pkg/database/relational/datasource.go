@@ -42,6 +42,19 @@ func Init(dbconfig config.DatabaseConfiguration) error {
 
 }
 
+// Compare checks the database for conistence with the post migration state.
+func Compare(loader loaders.ResourceLoader, dbconfig config.DatabaseConfiguration, schemaFiles []string) ([]schema.Change, error) {
+
+	err := Init(dbconfig)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return schema.CompareOnly(Primary, loader, schemaFiles, nil)
+
+}
+
 // PreMigrate runs the premigration process for the database.
 func PreMigrate(loader loaders.ResourceLoader, dbconfig config.DatabaseConfiguration, schemaFiles []string) error {
 
