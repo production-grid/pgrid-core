@@ -29,6 +29,12 @@
           "nullable": false
         },
         {
+          "name": "middle_name",
+          "type": "VARCHAR",
+          "size": 64,
+          "nullable": false
+        },
+        {
           "name": "last_name",
           "type": "VARCHAR",
           "size": 64,
