@@ -27,6 +27,24 @@ type User struct {
 	Permissions  string     `col:"permissions"`
 }
 
+// UserFinder is used to locate users in das system
+type UserFinder struct {
+}
+
+//FindByID locates a user by id
+func (finder *UserFinder) FindByID(dbType string, id string) (*User, error) {
+
+	user := &User{}
+	err := relational.FindByID(dbType, tableUsers, id, user)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+
+}
+
 // SaveWithTx saves a user to the database with a transaction context.
 func (user *User) SaveWithTx(tx *sql.Tx) (string, error) {
 	return relational.SaveWithTx(tx, user, tableUsers)
