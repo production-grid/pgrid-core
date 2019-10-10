@@ -42,7 +42,9 @@ The commercial projects will extend the core library with the following features
 * Performance Reports
 * Digital Sign In Sheet with PSM Notifiations
 * Wiki Style Public Database of Equipment and Venue Specifications
+* Equipment Inventory
 * Lighting Data Management Tools (i.e. Cloud based Lightwright)
+* Production Budgeting and Expense Tracking
 * Online Ticketing and Box Office Point-of-Sale (with chip card and ApplePay support)
 * Ingress Ticket Scanning
 * BOCA Printer Integration
