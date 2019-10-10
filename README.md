@@ -41,6 +41,8 @@ The commercial projects will extend the core library with the following features
 * Wiki Style Public Database of Equipment and Venue Specifications
 * Lighting Data Management Tools (i.e. Cloud based Lightwright)
 * Online Ticketing and Box Office Point-of-Sale (with Chip card and ApplePay support)
+* Ingress Ticket Scanning
+* BOCA Printer Integration
 * Donor Tracking and Fundraising Event Tools (e.i. End of Night Settlement)
 * One Time Donations and Recurring Donations
 * Class Registration and Scheduling
