@@ -12,15 +12,17 @@ etc.
 
 The core library provides the following foundational elements:
 
-* A Common Sense DAO Abstraction
-* Database Schema Migration Tools
+* A Common Sense DAO Abstraction based on Postgres.
+* Database Schema Migration Tools with pre and post migration phase for zero downtime deployments.
 * Reporting and PDF Rendering Tools
 * User Management with Password Resets and Security Groups
+* Multi-Tenant Support with Application Definable Terminology
 * Session Management
 * A notification system with support for SMS and EMail transport types.
 * Ayncronous Processing Support (via Channels or message queues)
 * Web Template Management
 * Event Processing and Alerting
+* Media Archival, Scaling, and Transcoding
 * Symmetric Encryption
 * Scheduled Event and Jobs
 * Bundled resources, API, and server rendered content pages.
