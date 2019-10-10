@@ -24,3 +24,24 @@ The core library provides the following foundational elements:
 * Symmetric Encryption
 * Scheduled Event and Jobs
 * Bundled resources, API, and server rendered content pages.
+
+## Roadmap Notes
+
+This library will provide core content management, e-commerce, and application
+infrastructure.  When complete, it will essentially be a full content management
+system with e-commerce built into the base version.
+
+The primary purpose behind this project is to support a set of closed source commercial
+e-commerce and production management tools for Performing Arts Organizations.
+
+The commercial projects will extend the core library with the following features:
+
+* Cast and Crew Scheduling (with Mobile Apps)
+* Production Collaboration Tools (Document Sharing, Chat)
+* Wiki Style Database of Equipment and Venue Specifications
+* Lighting Data Management Tools (i.e. Cloud based Lightwright)
+* Online Ticketing and Box Office Point-of-Sale
+* Donor Tracking and Fundraising Event Tools (e.i. End of Night Settlement)
+* One Time Donations and Recurring Donations
+* Class Registration and Scheduling
+* Integrated Royalty and Performance Rights Management
