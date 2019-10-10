@@ -7,15 +7,27 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/production-grid/pgrid-core/pkg/database/schema"
 	"github.com/production-grid/pgrid-core/pkg/ids"
 	"github.com/production-grid/pgrid-core/pkg/logging"
 )
 
-// enumerates the constants for databas types
+// enumerates the constants for database types
 const (
 	PRIMARY = "primary"
 	REPLICA = "replica"
 )
+
+// EntityFinder models the generic form of a finder
+type EntityFinder interface {
+	FindInterfaceByID(dbType string, id string) (interface{}, error)
+}
+
+// Entity models the generic form of an entity
+type Entity interface {
+	Save() (id string, err error)
+	Delete() error
+}
 
 // ErrNoResults is returned when a finder does not return results.
 var ErrNoResults = errors.New("no results")
@@ -24,6 +36,7 @@ var modelCache map[string]mappingModel
 
 type mappingModel struct {
 	TableName       string
+	SoftDeleted     bool
 	IDField         reflect.StructField
 	FieldsWithID    []reflect.StructField
 	Fields          []reflect.StructField
@@ -78,6 +91,34 @@ func HardDeleteWithTx(tx *sql.Tx, domain interface{}, table string) error {
 	return err
 }
 
+//SoftDelete updates the is_deleted flag for an entity
+func SoftDelete(domain interface{}, table string) error {
+
+	model, err := resolveMappingModel(domain, table)
+
+	if err != nil {
+		return err
+	}
+
+	if model == nil {
+		return errors.New("unable to resolve mapping model")
+	}
+
+	el := reflect.ValueOf(domain).Elem()
+
+	id, err := resolveID(el, model)
+
+	if err != nil {
+		return err
+	}
+
+	logging.Traceln("SQL", model.SoftDeleteQuery)
+
+	_, err = Primary.Exec(model.SoftDeleteQuery, id)
+
+	return err
+}
+
 //SoftDeleteWithTx updates the is_deleted flag for an entity
 func SoftDeleteWithTx(tx *sql.Tx, domain interface{}, table string) error {
 
@@ -122,7 +163,7 @@ func FindByID(dbType string, tableName string, id string, target interface{}) er
 		return err
 	}
 
-	logging.Infoln("SQL:", model.FindByIDQuery, id)
+	logging.Traceln("SQL:", model.FindByIDQuery, id)
 
 	rows, err := resolveDatabaseType(dbType).Query(model.FindByIDQuery, id)
 
@@ -147,13 +188,14 @@ func scan(model *mappingModel, rows *sql.Rows, target interface{}) error {
 
 	targets := make([]interface{}, len(model.FieldsWithID))
 
-	el := reflect.ValueOf(target).Elem()
+	v := reflect.ValueOf(target)
+
+	if v.Kind() != reflect.Ptr {
+		return errors.New("not a pointer")
+	}
 
 	for idx, fld := range model.FieldsWithID {
-		val := el.FieldByIndex(fld.Index)
-		logging.Errorln(val.Type())
-		i := val.Interface()
-		targets[idx] = &i
+		targets[idx] = v.Elem().FieldByIndex(fld.Index).Addr().Interface()
 	}
 
 	err := rows.Scan(targets...)
@@ -162,34 +204,37 @@ func scan(model *mappingModel, rows *sql.Rows, target interface{}) error {
 		return err
 	}
 
-	logging.LogJSON(targets)
-
-	/*
-
-		el := reflect.ValueOf(target).Elem()
-
-		for idx, fld := range model.FieldsWithID {
-			val := el.FieldByIndex(fld.Index)
-			v := val.Interface()
-			scanVal := reflect.ValueOf(targets[idx])
-			switch v.(type) {
-			case string:
-				val.SetString(targets[idx].(string))
-			case bool:
-				val.SetBool(scanVal.Bool())
-			case time.Time:
-				val.Set(scanVal)
-			}
-		}
-	*/
-
 	return err
 }
 
 // FindByIDWithTx locates an entity by ID
 func FindByIDWithTx(tx *sql.Tx, tableName string, id string, target interface{}) error {
 
-	return nil
+	model, err := resolveMappingModel(target, tableName)
+
+	if err != nil {
+		return err
+	}
+
+	logging.Traceln("SQL:", model.FindByIDQuery, id)
+
+	rows, err := tx.Query(model.FindByIDQuery, id)
+
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
+
+	if rows.Next() {
+		err := scan(model, rows, target)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	return ErrNoResults
 }
 
 //SaveWithTx saves a domain object to the database with a transaction.
@@ -254,6 +299,9 @@ func buildFindByIDQuery(model *mappingModel) string {
 	sb += " FROM "
 	sb += model.TableName
 	sb += " WHERE id = $1"
+	if model.SoftDeleted {
+		sb += " AND is_deleted = false"
+	}
 
 	return sb
 
@@ -318,7 +366,7 @@ func insert(tx *sql.Tx, el reflect.Value, model *mappingModel, id string) error 
 		return err
 	}
 
-	logging.Infoln("SQL:", model.InsertQuery)
+	logging.Traceln("SQL:", model.InsertQuery)
 
 	_, err = tx.Exec(model.InsertQuery, params...)
 
@@ -333,7 +381,7 @@ func update(tx *sql.Tx, el reflect.Value, model *mappingModel, id string) error 
 		return err
 	}
 
-	logging.Infoln("SQL:", model.UpdateQuery)
+	logging.Traceln("SQL:", model.UpdateQuery)
 
 	_, err = tx.Exec(model.UpdateQuery, params...)
 
@@ -396,6 +444,8 @@ func resolveMappingModel(domain interface{}, table string) (*mappingModel, error
 		Type:      t,
 		IDField:   fld,
 	}
+
+	model.SoftDeleted = schema.IsSoftDeleted(table)
 
 	fieldsWithID := make([]reflect.StructField, 0)
 	fieldsWithID = append(fieldsWithID, fld)

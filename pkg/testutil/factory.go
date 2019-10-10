@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/production-grid/pgrid-core/pkg/logging"
 	"github.com/production-grid/pgrid-core/pkg/money"
+	"github.com/stretchr/testify/assert"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -43,13 +43,48 @@ func PopulateTestData(entity interface{}) interface{} {
 		}
 	}
 
-	logging.LogJSONWithName("POPULATED OBJECT", entity)
-
 	return entity
 }
 
 // AssertEquivalent ensures two entities are populated with the same data.
-func AssertEquivalent(t *testing.T, actual interface{}, entity interface{}) {
+func AssertEquivalent(t *testing.T, actual interface{}, expected interface{}) {
+
+	assert := assert.New(t)
+
+	valExpected := reflect.ValueOf(expected)
+	valActual := reflect.ValueOf(actual)
+	tp := reflect.ValueOf(expected).Elem().Type()
+
+	for i := 0; i < tp.NumField(); i++ {
+		fld := tp.Field(i)
+		column := fld.Tag.Get("col")
+		if column == "" {
+			continue
+		}
+		if column == "id" {
+			continue
+		}
+		fldExpected := valExpected.Elem().FieldByIndex(fld.Index).Addr().Interface()
+		fldActual := valActual.Elem().FieldByIndex(fld.Index).Addr().Interface()
+		switch fldExpected.(type) {
+		case *string:
+			e := fldExpected.(*string)
+			a := fldActual.(*string)
+			assert.Equal(a, e)
+		case *bool:
+			e := fldExpected.(*bool)
+			a := fldActual.(*bool)
+			assert.Equal(a, e)
+		case *time.Time:
+			e := fldExpected.(*time.Time)
+			a := fldActual.(*time.Time)
+			assert.True(a.Equal(*e))
+		case **time.Time:
+			e := fldExpected.(**time.Time)
+			a := fldActual.(**time.Time)
+			assert.True((*a).Equal(**e))
+		}
+	}
 
 }
 

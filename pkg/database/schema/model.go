@@ -2,6 +2,36 @@ package schema
 
 import "database/sql"
 
+var lastTargetModel *Model
+
+// TableModel locates table model
+func TableModel(tableName string) *Table {
+
+	for _, table := range lastTargetModel.Tables {
+		if table.Name == tableName {
+			return &table
+		}
+	}
+
+	return nil
+
+}
+
+// IsSoftDeleted returns the soft deleted status
+func IsSoftDeleted(tableName string) bool {
+
+	table := TableModel(tableName)
+
+	for _, col := range table.Columns {
+		if col.Name == "is_deleted" {
+			return true
+		}
+	}
+
+	return false
+
+}
+
 /*
 Model models a database model.
 */

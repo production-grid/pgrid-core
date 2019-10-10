@@ -60,6 +60,8 @@ func (migrator *DefaultMigrator) Migrate(loader loaders.ResourceLoader, schemaFi
 		return err
 	}
 
+	lastTargetModel = target
+
 	source, err := migrator.Dialecter.ReadCurrentModel(migrator.Datasource)
 	if err != nil {
 		return err

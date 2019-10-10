@@ -31,6 +31,11 @@ type User struct {
 type UserFinder struct {
 }
 
+// FindInterfaceByID returns a user as an empty interface.
+func (finder *UserFinder) FindInterfaceByID(dbType string, id string) (interface{}, error) {
+	return finder.FindByID(dbType, id)
+}
+
 //FindByID locates a user by id
 func (finder *UserFinder) FindByID(dbType string, id string) (*User, error) {
 
@@ -53,4 +58,9 @@ func (user *User) SaveWithTx(tx *sql.Tx) (string, error) {
 // Save saves a user to the database without a transaction.
 func (user *User) Save() (string, error) {
 	return relational.Save(user, tableUsers)
+}
+
+// Delete deletes a user without a transaction.
+func (user *User) Delete() error {
+	return relational.SoftDelete(user, tableUsers)
 }
