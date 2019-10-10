@@ -38,9 +38,9 @@ The commercial projects will extend the core library with the following features
 
 * Cast and Crew Scheduling (with Mobile Apps)
 * Production Collaboration Tools (Document Sharing, Chat)
-* Wiki Style Database of Equipment and Venue Specifications
+* Wiki Style Public Database of Equipment and Venue Specifications
 * Lighting Data Management Tools (i.e. Cloud based Lightwright)
-* Online Ticketing and Box Office Point-of-Sale
+* Online Ticketing and Box Office Point-of-Sale (with Chip card and ApplePay support)
 * Donor Tracking and Fundraising Event Tools (e.i. End of Night Settlement)
 * One Time Donations and Recurring Donations
 * Class Registration and Scheduling
