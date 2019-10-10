@@ -39,6 +39,7 @@ The commercial projects will extend the core library with the following features
 * Cast and Crew Scheduling (with Mobile Apps)
 * Artistic and Work Notes Distribution/Archival
 * Production Collaboration Tools (Document Sharing, Chat)
+* Child Protection Features for Shows Involving Young Performers
 * Performance Reports
 * Digital Sign In Sheet with PSM Notifiations
 * Wiki Style Public Database of Equipment and Venue Specifications
