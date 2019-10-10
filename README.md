@@ -43,6 +43,7 @@ The commercial projects will extend the core library with the following features
 * Artistic and Work Notes Distribution/Archival
 * Production Collaboration Tools (Document Sharing, Chat)
 * Child Protection Features for Shows Involving Young Performers
+* Integrated Background Checks for Adults Working With Young Performers
 * Performance Reports
 * Digital Sign In Sheet with PSM Notifiations
 * Wiki Style Public Database of Equipment and Venue Specifications
