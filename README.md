@@ -32,7 +32,8 @@ infrastructure.  When complete, it will essentially be a full content management
 system with e-commerce built into the base version.
 
 The primary purpose behind this project is to support a set of closed source commercial
-e-commerce and production management tools for Performing Arts Organizations.
+e-commerce and production management tools for Performing Arts Organizations while leaving
+the parts with more broad utility in the public domain.
 
 The commercial projects will extend the core library with the following features:
 
