@@ -1,0 +1,43 @@
+{
+  "triggers": [
+    {
+      "name": "replicate_foo",
+      "table": "foo",
+      "statement": "INSERT INTO bar VALUES(NEW.id, NEW.value)",
+      "timing": "AFTER",
+      "event": "INSERT"
+    }
+  ],
+  "tables" : [
+    {
+      "name": "foo",
+      "columns": [
+        {
+          "name": "id",
+          "type" : "int AUTO_INCREMENT",
+          "primaryKey": true
+        },
+        {
+          "name": "value",
+          "type" : "VARCHAR",
+          "size" : 128
+        }
+      ]
+    },
+    {
+      "name": "bar",
+      "columns": [
+        {
+          "name": "id",
+          "type" : "int AUTO_INCREMENT",
+          "primaryKey": true
+        },
+        {
+          "name": "value",
+          "type" : "VARCHAR",
+          "size" : 128
+        }
+      ]
+    }
+  ]
+}

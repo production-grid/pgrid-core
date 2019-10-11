@@ -1,0 +1,15 @@
+name: Production Grid Demo
+port: 8000
+database:
+  primary:
+    hostname: localhost
+    port: 5432
+    schema: pgrid_core
+    user: pgrid
+    password: pgrid
+  replica:
+    hostname: localhost
+    port: 5432
+    schema: pgrid_core
+    user: pgrid
+    password: pgrid
