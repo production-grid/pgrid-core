@@ -16,6 +16,52 @@ type LoginRequest struct {
 	Password     string `json:"password"`
 }
 
+//SessionDTO models an interactive sesion
+type SessionDTO struct {
+	UserID               string   `json:"userId"`
+	FirstName            string   `json:"firstName"`
+	LastName             string   `json:"lastName"`
+	TenantID             string   `json:"tenantId,omitempty"`
+	TenantName           string   `json:"tenantName,omitempty"`
+	EffectivePermissions []string `json:"effectivePermissions"`
+}
+
+//GetSession returns session meta data
+func GetSession(session applications.Session, w http.ResponseWriter, req *http.Request) {
+
+	dto := SessionDTO{
+		UserID:    session.UserID,
+		FirstName: session.FirstName,
+		LastName:  session.LastName,
+		TenantID:  session.TenantID,
+	}
+
+	if session.EffectivePermissions != nil {
+		perms := make([]string, 0)
+
+		for key, val := range session.EffectivePermissions {
+			if val {
+				perms = append(perms, key)
+			}
+		}
+
+		dto.EffectivePermissions = perms
+	}
+
+	httputils.SendJSON(dto, w)
+
+}
+
+//PostLogout terminates an interactive session
+func PostLogout(session applications.Session, w http.ResponseWriter, req *http.Request) {
+
+	if session.SessionKey != "" {
+		applications.CurrentApplication.SessionStore.Delete(session.SessionKey)
+	}
+
+	httputils.SendJSON(httputils.Acknowledgement{Success: true}, w)
+}
+
 //PostLogin processes an interactive login request
 func PostLogin(session applications.Session, w http.ResponseWriter, req *http.Request) {
 
@@ -60,10 +106,5 @@ func PostLogin(session applications.Session, w http.ResponseWriter, req *http.Re
 		http.SetCookie(w, &cookie)
 		httputils.SendJSON(httputils.Acknowledgement{Success: true, ID: secureSession.SessionKey}, w)
 	}
-
-}
-
-//PostUserReg processes an incoming user registration request
-func PostUserReg(session applications.Session, w http.ResponseWriter, req *http.Request) {
 
 }

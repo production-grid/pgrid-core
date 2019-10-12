@@ -42,17 +42,24 @@ func (mod *Module) APIRoutes(app *applications.Application) ([]applications.APIR
 		},
 		applications.APIRoute{
 			Route: applications.Route{
-				Path:        "/reg",
-				HandlerFunc: PostUserReg,
+				Path:        "/login",
+				HandlerFunc: PostLogin,
 			},
 			Method: http.MethodPost,
 		},
 		applications.APIRoute{
 			Route: applications.Route{
-				Path:        "/login",
-				HandlerFunc: PostLogin,
+				Path:        "/logout",
+				HandlerFunc: PostLogout,
 			},
 			Method: http.MethodPost,
+		},
+		applications.APIRoute{
+			Route: applications.Route{
+				Path:        "/session",
+				HandlerFunc: GetSession,
+			},
+			Method: http.MethodGet,
 		},
 	}
 

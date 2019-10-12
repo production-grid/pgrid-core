@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+
+	"github.com/production-grid/pgrid-core/pkg/applications"
 )
 
 //PostJSON is used to test unauthenticated post requests as JSON
@@ -24,6 +26,33 @@ func PostJSON(t *testing.T, pathInfo string, body interface{}, responsePtr inter
 		t.Error(err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	resp, err := httpClient.Do(req)
+	HandlePossibleError(t, err)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		t.Error(resp.Status)
+	}
+
+	ConsumeResponse(responsePtr, resp)
+
+}
+
+//GetJSONWithSessionKey retrieves json with a given session token
+func GetJSONWithSessionKey(t *testing.T, pathInfo string, sessionKey string, responsePtr interface{}) {
+
+	httpClient := &http.Client{}
+
+	path := TestServer.URL + pathInfo
+
+	req, err := http.NewRequest(http.MethodGet, path, nil)
+	if err != nil {
+		t.Error(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if sessionKey != "" {
+		req.AddCookie(&http.Cookie{Name: applications.SessionCookieName, Path: "/", Value: sessionKey})
+	}
 	resp, err := httpClient.Do(req)
 	HandlePossibleError(t, err)
 	defer resp.Body.Close()
