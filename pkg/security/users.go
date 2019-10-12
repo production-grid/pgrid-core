@@ -9,6 +9,11 @@ import (
 
 const tableUsers = "users"
 
+//NewUser is the user factory function
+func NewUser() interface{} {
+	return &User{}
+}
+
 // User models a system user.  Permissions on this entity are global
 // and generally tenant users would have no top level permissions.
 type User struct {
@@ -34,6 +39,24 @@ type UserFinder struct {
 // FindInterfaceByID returns a user as an empty interface.
 func (finder *UserFinder) FindInterfaceByID(dbType string, id string) (interface{}, error) {
 	return finder.FindByID(dbType, id)
+}
+
+//FindCount returns the number of users in the system
+func (finder *UserFinder) FindCount(dbType string) (int, error) {
+	return relational.FindCount(dbType, tableUsers, &User{})
+}
+
+//FindByEmailAddress returns a user by their email address
+func (finder *UserFinder) FindByEmailAddress(dbType string, email string) (*User, error) {
+	user := User{}
+	err := relational.FindOneByWhereClause(dbType, tableUsers, "where email = $1", &user, email)
+	if err != nil {
+		if err == relational.ErrNoResults {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &user, nil
 }
 
 //FindByID locates a user by id

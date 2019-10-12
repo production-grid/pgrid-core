@@ -18,6 +18,9 @@ const (
 	REPLICA = "replica"
 )
 
+// EntityFactory is used to produce new entities
+type EntityFactory func() interface{}
+
 // EntityFinder models the generic form of a finder
 type EntityFinder interface {
 	FindInterfaceByID(dbType string, id string) (interface{}, error)
@@ -46,6 +49,7 @@ type mappingModel struct {
 	HardDeleteQuery string
 	SoftDeleteQuery string
 	FindByIDQuery   string
+	FindCountQuery  string
 }
 
 func (model *mappingModel) Columns() []string {
@@ -152,6 +156,124 @@ func resolveDatabaseType(dbType string) *sql.DB {
 	default:
 		return Primary
 	}
+}
+
+// FindOneByWhereClause returns the first object matching the where clause
+func FindOneByWhereClause(dbType string, tableName string, whereClause string, target interface{}, params ...interface{}) error {
+
+	model, err := resolveMappingModel(target, tableName)
+
+	if err != nil {
+		return err
+	}
+
+	sql := "select id, "
+	sql += strings.Join(model.Columns(), ",")
+	sql += " from "
+	sql += tableName
+	sql += " "
+	sql += whereClause
+	if model.SoftDeleted {
+		sql += " and is_deleted = false"
+	}
+
+	logging.Tracef("SQL: %v", sql)
+
+	rows, err := resolveDatabaseType(dbType).Query(sql, params...)
+	defer rows.Close()
+
+	if err != nil {
+		logging.Errorf("Find failed: %v", err)
+		return err
+	}
+
+	if rows.Next() {
+		err := scan(model, rows, target)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	return ErrNoResults
+
+}
+
+// FindByWhereClause returns all objects in the given table matching the where clause.
+func FindByWhereClause(dbType string, tableName string, whereClause string, entityFactory EntityFactory, params ...interface{}) ([]interface{}, error) {
+
+	prototype := entityFactory()
+
+	model, err := resolveMappingModel(prototype, tableName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	sql := "select id, "
+	sql += strings.Join(model.Columns(), ",")
+	sql += " from "
+	sql += tableName
+	sql += " "
+	sql += whereClause
+	if model.SoftDeleted {
+		sql += " and is_deleted = false"
+	}
+
+	logging.Tracef("SQL: %v", sql)
+
+	results := make([]interface{}, 0)
+
+	rows, err := resolveDatabaseType(dbType).Query(sql, params...)
+	defer rows.Close()
+
+	if err != nil {
+		logging.Errorf("Find failed: %v", err)
+		return results, err
+	}
+
+	for rows.Next() {
+		target := entityFactory()
+		err := scan(model, rows, target)
+		if err != nil {
+			return results, err
+		}
+		results = append(results, target)
+	}
+
+	return results, nil
+
+}
+
+// FindCount returns the number of activate rows in the table
+func FindCount(dbType string, tableName string, target interface{}) (int, error) {
+
+	model, err := resolveMappingModel(target, tableName)
+
+	if err != nil {
+		return 0, err
+	}
+
+	logging.Traceln("SQL:", model.FindCountQuery)
+
+	rows, err := resolveDatabaseType(dbType).Query(model.FindCountQuery)
+
+	if err != nil {
+		return 0, err
+	}
+
+	defer rows.Close()
+
+	if rows.Next() {
+		var result *int
+		err := rows.Scan(&result)
+		if err != nil {
+			return 0, err
+		}
+		return *result, nil
+	}
+
+	return 0, nil
 }
 
 // FindByID locates an entity by ID
@@ -301,6 +423,18 @@ func buildFindByIDQuery(model *mappingModel) string {
 	sb += " WHERE id = $1"
 	if model.SoftDeleted {
 		sb += " AND is_deleted = false"
+	}
+
+	return sb
+
+}
+
+func buildFindCountQuery(model *mappingModel) string {
+
+	sb := "SELECT count(*) FROM "
+	sb += model.TableName
+	if model.SoftDeleted {
+		sb += " WHERE is_deleted = false"
 	}
 
 	return sb
@@ -472,6 +606,7 @@ func resolveMappingModel(domain interface{}, table string) (*mappingModel, error
 	model.HardDeleteQuery = buildHardDeleteQuery(model)
 	model.SoftDeleteQuery = buildSoftDeleteQuery(model)
 	model.FindByIDQuery = buildFindByIDQuery(model)
+	model.FindCountQuery = buildFindCountQuery(model)
 
 	if err != nil {
 		return nil, err

@@ -1,14 +1,23 @@
 package testutil
 
 import (
+	"net/http/httptest"
+	"os"
 	"sync"
 	"testing"
 
 	"github.com/production-grid/pgrid-core/pkg/applications"
+	"github.com/production-grid/pgrid-core/pkg/cache"
 	"github.com/production-grid/pgrid-core/pkg/config"
 	"github.com/production-grid/pgrid-core/pkg/loaders"
+	"github.com/production-grid/pgrid-core/pkg/logging"
 	"github.com/production-grid/pgrid-core/pkg/security"
+
+	"github.com/gorilla/handlers"
 )
+
+//TestServer provides a reference to the http test server
+var TestServer *httptest.Server
 
 var initOnce sync.Once
 
@@ -37,10 +46,22 @@ func doTestStartup(t *testing.T) {
 		panic(err)
 	}
 
+	defaultUser := applications.DefaultAdminUser{
+		FirstName: "System",
+		LastName:  "Administrator",
+		EMail:     "devops@productiongrid.com",
+		Password:  "test123",
+	}
+
+	localCache := cache.LocalCache{}
+
 	app := applications.Application{
-		CoreConfiguration: *coreConfig,
-		Name:              "Production Grid Integration Test Application",
-		ConfigLoader:      loader,
+		CoreConfiguration:   *coreConfig,
+		DefaultAdminUser:    &defaultUser,
+		SessionStore:        &localCache,
+		GeneralPurposeCache: &localCache,
+		Name:                "Production Grid Integration Test Application",
+		ConfigLoader:        loader,
 		Modules: []applications.FeatureModule{
 			&security.Module{},
 		},
@@ -48,8 +69,14 @@ func doTestStartup(t *testing.T) {
 
 	app.PreMigrate()
 	app.PostMigrate()
-	go app.Start()
+	app.Start()
 
 	appSingleton = &app
+
+	// Print server logs to stdout
+	handler := handlers.LoggingHandler(os.Stdout, app.Router)
+
+	logging.Infoln("Starting HTTP Server...")
+	TestServer = httptest.NewServer(handler)
 
 }

@@ -3,6 +3,7 @@ package config
 // CoreConfiguration models the basic configuration of a pgrid application.
 type CoreConfiguration struct {
 	ApplicationName       string                `yaml:"name"`
+	SecureCookies         bool                  `yaml:"secure_cookies"`
 	PortNumber            int                   `yaml:"port"`
 	DatabaseConfiguration DatabaseConfiguration `yaml:"database"`
 }
