@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 
+	"github.com/production-grid/pgrid-core/pkg/httputils"
 	"github.com/production-grid/pgrid-core/pkg/logging"
 )
 
@@ -33,7 +34,7 @@ type Route struct {
 	AnyRequired  []string
 	Path         string
 	TenantScoped bool //a tenant context is required for this route
-	HandlerFunc  http.HandlerFunc
+	HandlerFunc  SecureHandlerFunc
 	CORS         bool
 }
 
@@ -49,6 +50,9 @@ type ContentRoute struct {
 	Route
 }
 
+//SecureHandlerFunc is
+type SecureHandlerFunc func(session Session, w http.ResponseWriter, req *http.Request)
+
 // builds and starts the router
 func initRouter(app *Application) error {
 
@@ -60,7 +64,7 @@ func initRouter(app *Application) error {
 
 	for _, route := range app.APIRoutes {
 		logging.Debugf("Adding API Route %v: /api%v", route.Method, route.Path)
-		apiRouter.HandleFunc(route.Path, route.HandlerFunc).Methods(route.Method)
+		apiRouter.HandleFunc(route.Path, handlerFunctionFor(route.Route)).Methods(route.Method)
 		if route.CORS {
 			logging.Debugf("Adding API Route OPTIONS: /api%v", route.Path)
 			apiRouter.HandleFunc(route.Path, SendCorsHeaders).Methods("OPTIONS")
@@ -82,6 +86,62 @@ func initRouter(app *Application) error {
 
 }
 
+func handlerFunctionFor(route Route) http.HandlerFunc {
+
+	return func(w http.ResponseWriter, req *http.Request) {
+
+		session, err := resolveSession(req)
+
+		if err != nil {
+			httputils.SendError(err, w)
+			return
+		}
+
+		if !isAuthorized(&route, req, &session) {
+			httputils.Send403(w)
+			return
+		}
+
+		route.HandlerFunc(session, w, req)
+
+	}
+
+}
+
+func isAuthorized(route *Route, req *http.Request, session *Session) bool {
+
+	if route.TenantScoped && session.TenantID == "" {
+		logging.Warnf("route %v requires tenant context", route.Path)
+		return false
+	}
+
+	if route.Permission != "" {
+		if !session.HasPermission(route.Permission) {
+			return false
+		}
+	}
+
+	if (route.AllRequired != nil) && (len(route.AllRequired) > 0) {
+		for _, permCode := range route.AllRequired {
+			if !session.HasPermission(permCode) {
+				return false
+			}
+		}
+	}
+
+	if (route.AnyRequired != nil) && (len(route.AnyRequired) > 0) {
+		for _, permCode := range route.AnyRequired {
+			if session.HasPermission(permCode) {
+				return true
+			}
+		}
+		return false
+	}
+
+	return true
+
+}
+
 // Handler mutates server responses. It is used to add standard headers or wrap
 // the default handler with additional layers of functionality, including
 // request logging.
@@ -91,10 +151,7 @@ func Handler(next http.Handler) http.Handler {
 
 		next.ServeHTTP(res, req)
 	})
-	// External handlers should be added here
 
-	// Switch back to gorilla fork once this issue is merged:
-	// https://github.com/gorilla/handlers/issues/141
 	return handlers.ProxyHeaders(
 		handlers.CombinedLoggingHandler(
 			os.Stdout,

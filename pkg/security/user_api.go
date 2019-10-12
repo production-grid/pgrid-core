@@ -17,7 +17,7 @@ type LoginRequest struct {
 }
 
 //PostLogin processes an interactive login request
-func PostLogin(w http.ResponseWriter, req *http.Request) {
+func PostLogin(session applications.Session, w http.ResponseWriter, req *http.Request) {
 
 	request := LoginRequest{}
 
@@ -48,7 +48,7 @@ func PostLogin(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		session, err := InitSession(*user)
+		session, err := user.InitSession()
 		if err != nil {
 			httputils.SendError(err, w)
 			return
@@ -64,6 +64,6 @@ func PostLogin(w http.ResponseWriter, req *http.Request) {
 }
 
 //PostUserReg processes an incoming user registration request
-func PostUserReg(w http.ResponseWriter, req *http.Request) {
+func PostUserReg(session applications.Session, w http.ResponseWriter, req *http.Request) {
 
 }

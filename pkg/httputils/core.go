@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/production-grid/pgrid-core/pkg/applications"
 	"github.com/production-grid/pgrid-core/pkg/logging"
 )
 
@@ -18,20 +17,6 @@ func Send403(w http.ResponseWriter) {
 // Send404 sends a 403 Not Found Error to the client.
 func Send404(w http.ResponseWriter) {
 	SendError(NewError(404, "Not Found"), w)
-}
-
-// FindSessionCookie locates the production grid session cookie in the request and
-// returns it.
-func FindSessionCookie(req *http.Request) *http.Cookie {
-
-	for _, cookie := range req.Cookies() {
-		if cookie.Name == applications.SessionCookieName {
-			return cookie
-		}
-	}
-
-	return nil
-
 }
 
 /*

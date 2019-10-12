@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/production-grid/pgrid-core/pkg/applications"
 	"github.com/production-grid/pgrid-core/pkg/database/relational"
+	"github.com/production-grid/pgrid-core/pkg/ids"
 )
 
 const tableUsers = "users"
@@ -30,6 +32,28 @@ type User struct {
 	LastLogin    *time.Time `col:"last_login"`
 	RegDate      time.Time  `col:"reg_date"`
 	Permissions  string     `col:"permissions"`
+}
+
+//InitSession creates an interactive session
+func (user *User) InitSession() (*applications.Session, error) {
+
+	//TODO add user->session index to enforce session fixation rules
+
+	session := applications.Session{
+		SessionKey: ids.NewSecureID(),
+		UserID:     user.ID,
+		FirstName:  user.FirstName,
+		LastName:   user.LastName,
+	}
+
+	err := applications.CurrentApplication.SessionStore.Put(session.SessionKey, session)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &session, nil
+
 }
 
 // UserFinder is used to locate users in das system

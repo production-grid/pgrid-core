@@ -16,7 +16,7 @@ type HeartBeatResponse struct {
 }
 
 //GetHeartbeat returns the current time
-func GetHeartbeat(w http.ResponseWriter, req *http.Request) {
+func GetHeartbeat(session applications.Session, w http.ResponseWriter, req *http.Request) {
 
 	response := HeartBeatResponse{}
 	response.Success = true
