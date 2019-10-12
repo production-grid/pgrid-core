@@ -2,6 +2,7 @@ package security
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/production-grid/pgrid-core/pkg/applications"
@@ -35,7 +36,7 @@ type User struct {
 }
 
 //InitSession creates an interactive session
-func (user *User) InitSession() (*applications.Session, error) {
+func (user *User) InitSession(currentSession *applications.Session) (*applications.Session, error) {
 
 	//TODO add user->session index to enforce session fixation rules
 
@@ -44,7 +45,10 @@ func (user *User) InitSession() (*applications.Session, error) {
 		UserID:     user.ID,
 		FirstName:  user.FirstName,
 		LastName:   user.LastName,
+		TenantID:   currentSession.TenantID,
 	}
+
+	user.resolveEffectivePermissions(&session)
 
 	err := applications.CurrentApplication.SessionStore.Put(session.SessionKey, session)
 
@@ -53,6 +57,21 @@ func (user *User) InitSession() (*applications.Session, error) {
 	}
 
 	return &session, nil
+
+}
+
+func (user *User) resolveEffectivePermissions(session *applications.Session) {
+
+	permMap := make(map[string]bool)
+
+	//start with user level permissions
+	if user.Permissions != "" {
+		for _, code := range strings.Split(user.Permissions, ",") {
+			permMap[code] = true
+		}
+	}
+
+	session.EffectivePermissions = permMap
 
 }
 

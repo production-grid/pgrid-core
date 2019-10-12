@@ -272,6 +272,21 @@ func (app *Application) PostMigrate() {
 
 }
 
+// AllPermKeys returns all permission codes for the given scope
+func (app *Application) AllPermKeys(permScope PermScope) []string {
+
+	results := make([]string, 0)
+
+	for _, perm := range app.Permissions {
+		if perm.Scope == permScope {
+			results = append(results, perm.Key)
+		}
+	}
+
+	return results
+
+}
+
 func (app *Application) clearTransientState() {
 
 	app.Router = nil

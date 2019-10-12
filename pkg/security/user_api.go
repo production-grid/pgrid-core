@@ -48,17 +48,17 @@ func PostLogin(session applications.Session, w http.ResponseWriter, req *http.Re
 			return
 		}
 
-		session, err := user.InitSession()
+		secureSession, err := user.InitSession(&session)
 		if err != nil {
 			httputils.SendError(err, w)
 			return
 		}
-		cookie := http.Cookie{Name: applications.SessionCookieName, Value: session.SessionKey, Path: "/"}
+		cookie := http.Cookie{Name: applications.SessionCookieName, Value: secureSession.SessionKey, Path: "/"}
 		if !applications.CurrentApplication.CoreConfiguration.SecureCookies {
 			cookie.Secure = true
 		}
 		http.SetCookie(w, &cookie)
-		httputils.SendJSON(httputils.Acknowledgement{Success: true}, w)
+		httputils.SendJSON(httputils.Acknowledgement{Success: true, ID: secureSession.SessionKey}, w)
 	}
 
 }

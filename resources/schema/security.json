@@ -75,8 +75,7 @@
         },
         {
           "name": "permissions",
-          "type": "VARCHAR",
-          "size": 256,
+          "type": "TEXT",
           "nullable": true
         },
         {

@@ -16,7 +16,7 @@ type Session struct {
 }
 
 //InitSession creates an interactive session
-func InitSession(user User) (*Session, error) {
+func InitSession(user User, tenantID *string) (*Session, error) {
 
 	session := Session{
 		SessionKey: ids.NewSecureID(),

@@ -2,6 +2,7 @@ package security
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/production-grid/pgrid-core/pkg/applications"
@@ -124,6 +125,10 @@ func (mod *Module) AfterAppInit(app *applications.Application) error {
 			hash := crypto.ComputeDoubleHash(app.DefaultAdminUser.Password)
 			user.PasswordHash = hash.OuterHash
 			user.InnerSalt = hash.InnerSalt
+			permCodes := make([]string, 0)
+			permCodes = append(permCodes, app.AllPermKeys(applications.PermScopeAdmin)...)
+			permCodes = append(permCodes, app.AllPermKeys(applications.PermScopePersonal)...)
+			user.Permissions = strings.Join(permCodes, ",")
 			user.Save()
 		}
 
