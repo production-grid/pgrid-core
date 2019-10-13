@@ -9,5 +9,6 @@ type FeatureModule interface {
 	AfterModuleInit(*Application) error
 	SchemaFiles(*Application) ([]string, error)
 	Permissions(*Application) []Permission
+	EventDefs(*Application) []EventDef
 	APIRoutes(*Application) ([]APIRoute, error)
 }

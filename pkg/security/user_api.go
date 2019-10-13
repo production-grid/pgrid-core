@@ -6,6 +6,7 @@ import (
 	"github.com/production-grid/pgrid-core/pkg/applications"
 	"github.com/production-grid/pgrid-core/pkg/crypto"
 	"github.com/production-grid/pgrid-core/pkg/database/relational"
+	"github.com/production-grid/pgrid-core/pkg/events"
 	"github.com/production-grid/pgrid-core/pkg/httputils"
 )
 
@@ -105,6 +106,7 @@ func PostLogin(session applications.Session, w http.ResponseWriter, req *http.Re
 		}
 		http.SetCookie(w, &cookie)
 		httputils.SendJSON(httputils.Acknowledgement{Success: true, ID: secureSession.SessionKey}, w)
+		events.Dispatch(EventLogin, session, LoginEventMetaData{EMail: request.EmailAddress})
 	}
 
 }

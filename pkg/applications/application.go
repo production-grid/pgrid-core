@@ -36,6 +36,8 @@ type Application struct {
 	Server              *http.Server
 	APIRoutes           []APIRoute
 	ContentRoutes       []ContentRoute
+	EventDefs           map[string]EventDef
+	EventListeners      []EventListener
 }
 
 // Start starts the application.

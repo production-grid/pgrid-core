@@ -9,6 +9,8 @@ import (
 	"github.com/production-grid/pgrid-core/pkg/crypto"
 	"github.com/production-grid/pgrid-core/pkg/database/relational"
 	"github.com/production-grid/pgrid-core/pkg/logging"
+
+	"github.com/sirupsen/logrus"
 )
 
 //permission key constants
@@ -27,6 +29,26 @@ type Module struct {
 //ID returns the unique id of the module
 func (mod *Module) ID() string {
 	return "security"
+}
+
+//EventDefs declares the events supported by this module
+func (mod *Module) EventDefs(app *applications.Application) ([]applications.EventDef, error) {
+
+	events := []applications.EventDef{
+		applications.EventDef{
+			Key:                    EventLogin,
+			DefaultSubscriberPerms: []string{PermAdmin},
+			AllowedSubscriberPerms: []string{PermAdmin, PermTenantAdmin},
+			LogLevel:               logrus.InfoLevel,
+			MetaDataFactory:        NewLoginEventMetaData,
+			MetaDataPrototype: LoginEventMetaData{
+				EMail: "user@domain.com",
+			},
+		},
+	}
+
+	return events, nil
+
 }
 
 //APIRoutes declares the API routes provided by this module
