@@ -41,8 +41,9 @@ func startEventProcessor() {
 
 	for {
 		e := <-dispatcherChannel
+		def := applications.CurrentApplication.EventDef(e.Key)
 		for _, listener := range applications.CurrentApplication.EventListeners {
-			go listener.Dispatched(e)
+			go listener.Dispatched(def, e)
 		}
 	}
 

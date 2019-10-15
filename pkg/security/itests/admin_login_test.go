@@ -42,7 +42,7 @@ func TestAdminLogin(t *testing.T) {
 
 	//good login attempt
 	loginRequest = security.LoginRequest{
-		EmailAddress: "devops@productiongrid.com",
+		EmailAddress: "jeff@jeffreydavidpayne.com",
 		Password:     "test123",
 	}
 

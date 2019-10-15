@@ -2,7 +2,6 @@ package security
 
 import (
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/production-grid/pgrid-core/pkg/applications"
@@ -32,7 +31,7 @@ func (mod *Module) ID() string {
 }
 
 //EventDefs declares the events supported by this module
-func (mod *Module) EventDefs(app *applications.Application) ([]applications.EventDef, error) {
+func (mod *Module) EventDefs(app *applications.Application) []applications.EventDef {
 
 	events := []applications.EventDef{
 		applications.EventDef{
@@ -47,7 +46,7 @@ func (mod *Module) EventDefs(app *applications.Application) ([]applications.Even
 		},
 	}
 
-	return events, nil
+	return events
 
 }
 
@@ -157,7 +156,7 @@ func (mod *Module) AfterAppInit(app *applications.Application) error {
 			permCodes := make([]string, 0)
 			permCodes = append(permCodes, app.AllPermKeys(applications.PermScopeAdmin)...)
 			permCodes = append(permCodes, app.AllPermKeys(applications.PermScopePersonal)...)
-			user.Permissions = strings.Join(permCodes, ",")
+			user.Permissions = permCodes
 			user.Save()
 		}
 

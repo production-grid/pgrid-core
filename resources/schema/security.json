@@ -74,11 +74,6 @@
           "nullable": false
         },
         {
-          "name": "permissions",
-          "type": "TEXT",
-          "nullable": true
-        },
-        {
           "name": "is_deleted",
           "type": "BOOLEAN",
           "nullable": false,
@@ -91,6 +86,43 @@
           "unique": true,
           "columnNames": [
             "email"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "user_perms",
+      "columns": [
+        {
+          "name": "id",
+          "type": "CHAR",
+          "size": 26,
+          "nullable": false,
+          "primaryKey": true
+        },
+        {
+          "name": "user_id",
+          "type": "CHAR",
+          "size": 32,
+          "nullable": false,
+          "primaryKey": true,
+          "foreignKey": {
+            "tableName": "users",
+            "name": "fk_perm_user"
+          }
+        },
+        {
+          "name": "permission",
+          "type": "VARCHAR",
+          "size": 64,
+          "nullable": false
+        }
+      ],
+      "indices": [
+        {
+          "name": "idx_user_perms",
+          "columnNames": [
+            "permission"
           ]
         }
       ]

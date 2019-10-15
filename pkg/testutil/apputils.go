@@ -9,8 +9,10 @@ import (
 	"github.com/production-grid/pgrid-core/pkg/applications"
 	"github.com/production-grid/pgrid-core/pkg/cache"
 	"github.com/production-grid/pgrid-core/pkg/config"
+	"github.com/production-grid/pgrid-core/pkg/events"
 	"github.com/production-grid/pgrid-core/pkg/loaders"
 	"github.com/production-grid/pgrid-core/pkg/logging"
+	"github.com/production-grid/pgrid-core/pkg/notifications"
 	"github.com/production-grid/pgrid-core/pkg/security"
 
 	"github.com/gorilla/handlers"
@@ -49,19 +51,29 @@ func doTestStartup(t *testing.T) {
 	defaultUser := applications.DefaultAdminUser{
 		FirstName: "System",
 		LastName:  "Administrator",
-		EMail:     "devops@productiongrid.com",
+		EMail:     "jeff@jeffreydavidpayne.com",
 		Password:  "test123",
 	}
 
 	localCache := cache.LocalCache{}
 
 	app := applications.Application{
-		CoreConfiguration:   *coreConfig,
-		DefaultAdminUser:    &defaultUser,
-		SessionStore:        &localCache,
-		GeneralPurposeCache: &localCache,
-		Name:                "Production Grid Integration Test Application",
-		ConfigLoader:        loader,
+		CoreConfiguration: *coreConfig,
+		DefaultAdminUser:  &defaultUser,
+		SessionStore:      &localCache,
+		Cache:             &localCache,
+		EventListeners: []applications.EventListener{
+			&events.LoggingEventListener{},
+			&notifications.NotifyingEventListener{
+				DefaultRecipientListFunc: security.SubscriberRecipientListFunc,
+				Transports: []notifications.Transport{
+					&notifications.MockTransport{},
+				},
+			},
+		},
+		Name:           "Production Grid Integration Test Application",
+		ConfigLoader:   loader,
+		TemplateLoader: loader,
 		Modules: []applications.FeatureModule{
 			&security.Module{},
 		},

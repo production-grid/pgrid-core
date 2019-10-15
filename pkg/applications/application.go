@@ -21,23 +21,36 @@ var CurrentApplication *Application
 // Developers configure the application with services and modules,
 // then starts it.
 type Application struct {
-	Name                string
-	TenantLingo         *TenantLingo
-	Modules             []FeatureModule
-	SchemaFiles         []string
-	SessionStore        cache.Provider
-	GeneralPurposeCache cache.Provider
-	ConfigLoader        loaders.ResourceLoader
-	CoreConfiguration   config.CoreConfiguration
-	Permissions         []Permission
-	AutoInit            bool //launch the automatic configuration tool if no user
-	DefaultAdminUser    *DefaultAdminUser
-	Router              *mux.Router
-	Server              *http.Server
-	APIRoutes           []APIRoute
-	ContentRoutes       []ContentRoute
-	EventDefs           map[string]EventDef
-	EventListeners      []EventListener
+	Name              string
+	TenantLingo       *TenantLingo
+	Modules           []FeatureModule
+	SessionStore      cache.Provider
+	Cache             cache.Provider
+	ConfigLoader      loaders.ResourceLoader
+	TemplateLoader    loaders.ResourceLoader
+	CoreConfiguration config.CoreConfiguration
+	AutoInit          bool //launch the automatic configuration tool if no user
+	DefaultAdminUser  *DefaultAdminUser
+	Router            *mux.Router
+	Server            *http.Server
+	EventListeners    []EventListener
+
+	//private stuff
+	schemaFiles   []string
+	apiRoutes     []APIRoute
+	contentRoutes []ContentRoute
+	eventDefs     map[string]EventDef
+	permissions   []Permission
+}
+
+//EventDef looks up an event definition by key
+func (app *Application) EventDef(key string) *EventDef {
+	def, exists := app.eventDefs[key]
+	if exists {
+		return &def
+	}
+
+	return nil
 }
 
 // Start starts the application.
@@ -160,10 +173,10 @@ func (app *Application) addSchemaFilesFrom(mod FeatureModule) error {
 	}
 
 	if modSchema != nil && len(modSchema) > 0 {
-		if app.SchemaFiles == nil {
-			app.SchemaFiles = make([]string, 0)
+		if app.schemaFiles == nil {
+			app.schemaFiles = make([]string, 0)
 		}
-		app.SchemaFiles = append(app.SchemaFiles, modSchema...)
+		app.schemaFiles = append(app.schemaFiles, modSchema...)
 	}
 	return nil
 
@@ -174,10 +187,25 @@ func (app *Application) addPermissionsFrom(mod FeatureModule) {
 	perms := mod.Permissions(app)
 
 	if perms != nil && len(perms) > 0 {
-		if app.Permissions == nil {
-			app.Permissions = make([]Permission, 0)
+		if app.permissions == nil {
+			app.permissions = make([]Permission, 0)
 		}
-		app.Permissions = append(app.Permissions, perms...)
+		app.permissions = append(app.permissions, perms...)
+	}
+
+}
+
+func (app *Application) addEventsFrom(mod FeatureModule) {
+
+	events := mod.EventDefs(app)
+
+	if events != nil && len(events) > 0 {
+		if app.eventDefs == nil {
+			app.eventDefs = make(map[string]EventDef)
+		}
+		for _, def := range events {
+			app.eventDefs[def.Key] = def
+		}
 	}
 
 }
@@ -201,6 +229,8 @@ func (app *Application) initModule(mod FeatureModule) error {
 		return err
 	}
 
+	app.addEventsFrom(mod)
+
 	return nil
 
 }
@@ -213,13 +243,13 @@ func (app *Application) addRoutesFrom(mod FeatureModule) error {
 		return err
 	}
 
-	if app.APIRoutes == nil {
-		app.APIRoutes = make([]APIRoute, 0)
+	if app.apiRoutes == nil {
+		app.apiRoutes = make([]APIRoute, 0)
 	}
 	for _, route := range apiRoutes {
 		//translate module context
 		route.Path = "/" + mod.ID() + route.Path
-		app.APIRoutes = append(app.APIRoutes, route)
+		app.apiRoutes = append(app.apiRoutes, route)
 	}
 
 	//TODO: Server rendered content routes
@@ -240,7 +270,7 @@ func (app *Application) PreMigrate() {
 		logging.Errorln("Pre migration failed due to previous errors.")
 	}
 
-	err = relational.PreMigrate(app.ConfigLoader, app.CoreConfiguration.DatabaseConfiguration, app.SchemaFiles)
+	err = relational.PreMigrate(app.ConfigLoader, app.CoreConfiguration.DatabaseConfiguration, app.schemaFiles)
 
 	if err != nil {
 		logging.Error(err)
@@ -263,7 +293,7 @@ func (app *Application) PostMigrate() {
 		logging.Errorln("Post migration failed due to previous errors.")
 	}
 
-	err = relational.PostMigrate(app.ConfigLoader, app.CoreConfiguration.DatabaseConfiguration, app.SchemaFiles)
+	err = relational.PostMigrate(app.ConfigLoader, app.CoreConfiguration.DatabaseConfiguration, app.schemaFiles)
 
 	if err != nil {
 		logging.Error(err)
@@ -279,7 +309,7 @@ func (app *Application) AllPermKeys(permScope PermScope) []string {
 
 	results := make([]string, 0)
 
-	for _, perm := range app.Permissions {
+	for _, perm := range app.permissions {
 		if perm.Scope == permScope {
 			results = append(results, perm.Key)
 		}
@@ -293,9 +323,9 @@ func (app *Application) clearTransientState() {
 
 	app.Router = nil
 	app.Server = nil
-	app.APIRoutes = nil
-	app.SchemaFiles = nil
-	app.Permissions = nil
-	app.ContentRoutes = nil
+	app.apiRoutes = nil
+	app.schemaFiles = nil
+	app.permissions = nil
+	app.contentRoutes = nil
 
 }

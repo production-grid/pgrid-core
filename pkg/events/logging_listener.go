@@ -14,28 +14,26 @@ type LoggingEventListener struct {
 }
 
 //Dispatched is called whenever an event id processed
-func (listener *LoggingEventListener) Dispatched(event *applications.Event) {
+func (listener *LoggingEventListener) Dispatched(def *applications.EventDef, event *applications.Event) {
 
-	def, ok := applications.CurrentApplication.EventDefs[event.Key]
-
-	if !ok {
+	if def == nil {
 		logging.Warnf("unregistered event type: %v\n", event.Key)
 		return
 	}
 
 	switch def.LogLevel {
 	case logrus.DebugLevel:
-		logging.Debugln(listener.formatLogLine(&def, event))
+		logging.Debugln(listener.formatLogLine(def, event))
 	case logrus.InfoLevel:
-		logging.Infoln(listener.formatLogLine(&def, event))
+		logging.Infoln(listener.formatLogLine(def, event))
 	case logrus.WarnLevel:
-		logging.Warnln(listener.formatLogLine(&def, event))
+		logging.Warnln(listener.formatLogLine(def, event))
 	case logrus.ErrorLevel:
-		logging.Warnln(listener.formatLogLine(&def, event))
+		logging.Warnln(listener.formatLogLine(def, event))
 	case logrus.FatalLevel:
-		logging.Fatalln(listener.formatLogLine(&def, event))
+		logging.Fatalln(listener.formatLogLine(def, event))
 	default:
-		logging.Traceln(listener.formatLogLine(&def, event))
+		logging.Traceln(listener.formatLogLine(def, event))
 	}
 
 }

@@ -106,7 +106,7 @@ func PostLogin(session applications.Session, w http.ResponseWriter, req *http.Re
 		}
 		http.SetCookie(w, &cookie)
 		httputils.SendJSON(httputils.Acknowledgement{Success: true, ID: secureSession.SessionKey}, w)
-		events.Dispatch(EventLogin, session, LoginEventMetaData{EMail: request.EmailAddress})
+		events.Dispatch(EventLogin, *secureSession, LoginEventMetaData{EMail: request.EmailAddress})
 	}
 
 }

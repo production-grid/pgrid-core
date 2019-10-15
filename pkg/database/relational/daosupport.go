@@ -200,7 +200,7 @@ func FindOneByWhereClause(dbType string, tableName string, whereClause string, t
 }
 
 // FindByWhereClause returns all objects in the given table matching the where clause.
-func FindByWhereClause(dbType string, tableName string, whereClause string, entityFactory EntityFactory, params ...interface{}) ([]interface{}, error) {
+func FindByWhereClause(dbType string, entityFactory EntityFactory, tableName string, whereClause string, params ...interface{}) ([]interface{}, error) {
 
 	prototype := entityFactory()
 
@@ -357,6 +357,77 @@ func FindByIDWithTx(tx *sql.Tx, tableName string, id string, target interface{})
 	}
 
 	return ErrNoResults
+}
+
+//LoadChildren loads child values from the database in accordance with the prophecy
+func LoadChildren(dbType string, tableName string, entityCol string, childCol string, id string) ([]string, error) {
+
+	selectQuery := "select " + childCol + " from " + tableName + " where " + entityCol + " = $1"
+
+	rows, err := resolveDatabaseType(dbType).Query(selectQuery, id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]string, 0)
+	for rows.Next() {
+		var childValue string
+		err = rows.Scan(&childValue)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, childValue)
+	}
+
+	return results, nil
+}
+
+//SaveChildren saves a collection of child values to the database
+func SaveChildren(tx *sql.Tx, table string, domain interface{}, entityCol string, childCol string, children []string) error {
+
+	model, err := resolveMappingModel(domain, table)
+
+	if err != nil {
+		return err
+	}
+
+	if model == nil {
+		return errors.New("unable to resolve mapping model")
+	}
+
+	el := reflect.ValueOf(domain).Elem()
+
+	id, err := resolveID(el, model)
+
+	if err != nil {
+		return err
+	}
+
+	deleteQuery := "delete from " + table + " where " + entityCol + " = $1"
+
+	_, err = tx.Exec(deleteQuery, id)
+
+	if err != nil {
+		return err
+	}
+
+	if children != nil {
+
+		insertQuery := "insert into " + table + "(id," + entityCol + ", " + childCol + ")"
+		insertQuery += " VALUES ($1, $2, $3)"
+
+		for _, child := range children {
+			_, err = tx.Exec(insertQuery, ids.NewSecureID(), id, child)
+			if err != nil {
+				return err
+			}
+		}
+
+	}
+
+	return nil
+
 }
 
 //SaveWithTx saves a domain object to the database with a transaction.

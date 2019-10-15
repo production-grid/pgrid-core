@@ -62,7 +62,7 @@ func initRouter(app *Application) error {
 
 	apiRouter := app.Router.PathPrefix("/api").Subrouter()
 
-	for _, route := range app.APIRoutes {
+	for _, route := range app.apiRoutes {
 		logging.Debugf("Adding API Route %v: /api%v", route.Method, route.Path)
 		apiRouter.HandleFunc(route.Path, handlerFunctionFor(route.Route)).Methods(route.Method)
 		if route.CORS {
