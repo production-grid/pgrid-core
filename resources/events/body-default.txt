@@ -1,0 +1,3 @@
+A {{.event.Key}} event has just been detected.
+
+More Information: {{.event.MetaData}}

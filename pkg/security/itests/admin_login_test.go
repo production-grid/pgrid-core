@@ -2,6 +2,7 @@ package itests
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -71,5 +72,7 @@ func TestAdminLogin(t *testing.T) {
 	testutil.GetJSONWithSessionKey(t, "/api/security/session", ack.ID, &session)
 
 	assert.Empty(session.UserID)
+
+	time.Sleep(10 * time.Second)
 
 }

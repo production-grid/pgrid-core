@@ -40,9 +40,10 @@ func StartTestApplication(t *testing.T) *applications.Application {
 
 func doTestStartup(t *testing.T) {
 
-	loader := &loaders.FileResourceLoader{}
+	rcLoader := &loaders.FileResourceLoader{}
+	configLoader := &loaders.LocalConfigLoader{}
 
-	coreConfig, err := config.LoadCore(loader, "demo-config.yml")
+	coreConfig, err := config.LoadCore(configLoader, "pgrid/pgrid_dev.yml")
 
 	if err != nil {
 		panic(err)
@@ -67,13 +68,18 @@ func doTestStartup(t *testing.T) {
 			&notifications.NotifyingEventListener{
 				DefaultRecipientListFunc: security.SubscriberRecipientListFunc,
 				Transports: []notifications.Transport{
-					&notifications.MockTransport{},
+					&notifications.TwilioTransport{
+						Config: coreConfig.Notifications.Twilio,
+					},
+					&notifications.SendGridTransport{
+						Config: coreConfig.Notifications.SendGrid,
+					},
 				},
 			},
 		},
 		Name:           "Production Grid Integration Test Application",
-		ConfigLoader:   loader,
-		TemplateLoader: loader,
+		ConfigLoader:   rcLoader,
+		TemplateLoader: rcLoader,
 		Modules: []applications.FeatureModule{
 			&security.Module{},
 		},

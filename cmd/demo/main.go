@@ -10,9 +10,10 @@ import (
 
 func main() {
 
-	loader := &loaders.FileResourceLoader{}
+	rcLoader := &loaders.FileResourceLoader{}
+	configLoader := &loaders.LocalConfigLoader{}
 
-	coreConfig, err := config.LoadCore(loader, "demo-config.yml")
+	coreConfig, err := config.LoadCore(configLoader, "pgrid/pgrid_dev.yml")
 
 	if err != nil {
 		panic(err)
@@ -85,13 +86,13 @@ func main() {
 	}
 
 	app := applications.Application{
-		CoreConfiguration:   *coreConfig,
-		TenantLingo:         &lingo,
-		SessionStore:        &localCache,
-		GeneralPurposeCache: &localCache,
-		DefaultAdminUser:    &defaultUser,
-		Name:                "Production Grid Core Demo",
-		ConfigLoader:        loader,
+		CoreConfiguration: *coreConfig,
+		TenantLingo:       &lingo,
+		SessionStore:      &localCache,
+		Cache:             &localCache,
+		DefaultAdminUser:  &defaultUser,
+		Name:              "Production Grid Core Demo",
+		ConfigLoader:      rcLoader,
 		Modules: []applications.FeatureModule{
 			&security.Module{},
 		},
