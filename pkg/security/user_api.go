@@ -8,6 +8,7 @@ import (
 	"github.com/production-grid/pgrid-core/pkg/database/relational"
 	"github.com/production-grid/pgrid-core/pkg/events"
 	"github.com/production-grid/pgrid-core/pkg/httputils"
+	"github.com/production-grid/pgrid-core/pkg/logging"
 )
 
 //LoginRequest models an API login request.
@@ -24,6 +25,9 @@ type SessionDTO struct {
 	LastName             string   `json:"lastName"`
 	TenantID             string   `json:"tenantId,omitempty"`
 	TenantName           string   `json:"tenantName,omitempty"`
+	AdminLogo            string   `json:"adminLogo,omitempty"`
+	ApplicationName      string   `json:"applicationName"`
+	TagLine              string   `json:"tagline"`
 	EffectivePermissions []string `json:"effectivePermissions"`
 }
 
@@ -31,10 +35,12 @@ type SessionDTO struct {
 func GetSession(session applications.Session, w http.ResponseWriter, req *http.Request) {
 
 	dto := SessionDTO{
-		UserID:    session.UserID,
-		FirstName: session.FirstName,
-		LastName:  session.LastName,
-		TenantID:  session.TenantID,
+		UserID:          session.UserID,
+		FirstName:       session.FirstName,
+		LastName:        session.LastName,
+		TenantID:        session.TenantID,
+		ApplicationName: applications.CurrentApplication.Name,
+		TagLine:         applications.CurrentApplication.TagLine,
 	}
 
 	if session.EffectivePermissions != nil {
@@ -70,6 +76,8 @@ func PostLogin(session applications.Session, w http.ResponseWriter, req *http.Re
 
 	if httputils.ConsumeRequestBody(&request, w, req) {
 
+		logging.LogJSON(request)
+
 		userFinder := UserFinder{}
 		user, err := userFinder.FindByEmailAddress(relational.REPLICA, request.EmailAddress)
 		if err != nil {
@@ -101,7 +109,7 @@ func PostLogin(session applications.Session, w http.ResponseWriter, req *http.Re
 			return
 		}
 		cookie := http.Cookie{Name: applications.SessionCookieName, Value: secureSession.SessionKey, Path: "/"}
-		if !applications.CurrentApplication.CoreConfiguration.SecureCookies {
+		if applications.CurrentApplication.CoreConfiguration.SecureCookies {
 			cookie.Secure = true
 		}
 		http.SetCookie(w, &cookie)

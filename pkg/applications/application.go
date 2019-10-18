@@ -22,6 +22,7 @@ var CurrentApplication *Application
 // then starts it.
 type Application struct {
 	Name              string
+	TagLine           string
 	TenantLingo       *TenantLingo
 	Modules           []FeatureModule
 	SessionStore      cache.Provider

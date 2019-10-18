@@ -91,7 +91,8 @@ func main() {
 		SessionStore:      &localCache,
 		Cache:             &localCache,
 		DefaultAdminUser:  &defaultUser,
-		Name:              "Production Grid Core Demo",
+		Name:              "Production Grid",
+		TagLine:           "Connecting the Performing Arts",
 		ConfigLoader:      rcLoader,
 		Modules: []applications.FeatureModule{
 			&security.Module{},
