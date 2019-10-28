@@ -52,7 +52,7 @@ func doTestStartup(t *testing.T) {
 	defaultUser := applications.DefaultAdminUser{
 		FirstName: "System",
 		LastName:  "Administrator",
-		EMail:     "jeff@jeffreydavidpayne.com",
+		EMail:     "jeff@productiongrid.com",
 		Password:  "test123",
 	}
 

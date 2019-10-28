@@ -5,11 +5,59 @@ export default [
   {
     path: '/hello',
     name: 'HelloWorld',
-    component: HelloWorld
+    component: HelloWorld,
+    props: true,
+    nav: {
+      section: 'Security',
+      sectionIndex: 1,
+      sectionIconClass: 'fas fa-shield-alt',
+      caption: 'Hello!',
+      index: 0,
+      permission: "security.perm.user",
+      allRequired: [],
+      anyRequired: []
+    }
+  },
+  {
+    path: '/users',
+    name: 'HelloWorld',
+    component: HelloWorld,
+    props: true,
+    nav: {
+      section: 'Security',
+      caption: 'Users',
+      index: 1,
+      permission: "security.perm.admin",
+      allRequired: ["security.perm.admin","security.perm.user"],
+      anyRequired: ["security.perm.admin","security.perm.user"]
+    }
+  },
+  {
+    path: '/groups',
+    name: 'HelloWorld',
+    component: HelloWorld,
+    props: true,
+    nav: {
+      section: 'Security',
+      caption: 'Groups',
+      permission: "security.perm.admin"
+    }
+  },
+  {
+    path: '/tenants',
+    name: 'HelloWorld',
+    component: HelloWorld,
+    props: true,
+    nav: {
+      section: 'Security',
+      caption: 'Tenants',
+      permission: "security.perm.admin",
+    }
   },
   {
     path: '/login',
     name: 'Login',
-    component: Login
+    component: Login,
+    props: true
   }
 ]

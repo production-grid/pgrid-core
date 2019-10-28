@@ -87,11 +87,11 @@ func PostLogin(session applications.Session, w http.ResponseWriter, req *http.Re
 
 		if user == nil {
 			crypto.SimulateDoubleHashTimeDelay()
-			httputils.SendJSON(httputils.Acknowledgement{Success: false, Description: "Invalid Login"}, w)
+			httputils.SendJSON(httputils.Acknowledgement{Success: false, Error: "Invalid Login"}, w)
 			return
 		}
 		if user.IsLocked {
-			httputils.SendJSON(httputils.Acknowledgement{Success: false, Description: "User account locked"}, w)
+			httputils.SendJSON(httputils.Acknowledgement{Success: false, Error: "User account locked"}, w)
 			return
 		}
 		expectedHash := crypto.DoubleHash{
@@ -99,7 +99,7 @@ func PostLogin(session applications.Session, w http.ResponseWriter, req *http.Re
 			OuterHash: user.PasswordHash,
 		}
 		if !crypto.CompareDoubleHash(request.Password, expectedHash) {
-			httputils.SendJSON(httputils.Acknowledgement{Success: false, Description: "Invalid Login"}, w)
+			httputils.SendJSON(httputils.Acknowledgement{Success: false, Error: "Invalid Login"}, w)
 			return
 		}
 

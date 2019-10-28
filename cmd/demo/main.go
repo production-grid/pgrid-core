@@ -4,7 +4,9 @@ import (
 	"github.com/production-grid/pgrid-core/pkg/applications"
 	"github.com/production-grid/pgrid-core/pkg/cache"
 	"github.com/production-grid/pgrid-core/pkg/config"
+	"github.com/production-grid/pgrid-core/pkg/events"
 	"github.com/production-grid/pgrid-core/pkg/loaders"
+	"github.com/production-grid/pgrid-core/pkg/notifications"
 	"github.com/production-grid/pgrid-core/pkg/security"
 )
 
@@ -20,58 +22,40 @@ func main() {
 	}
 
 	lingo := applications.TenantLingo{
-		TenantSingularKey:     "arts.organization",
-		TenantPluralKey:       "arts.organizations",
-		TenantSingularDefault: "Arts Organization",
-		TenantPluralDefault:   "Arts Organizations",
+		TenantSingular: "Arts Organization",
+		TenantPlural:   "Arts Organizations",
 		Types: []applications.TenantType{
 			applications.TenantType{
-				SingularKey:     "theatre.company",
-				PluralKey:       "theatre.companies",
-				SingularDefault: "Theatre Company",
-				PluralDefault:   "Theatre Companies",
+				Singular: "Theatre Company",
+				Plural:   "Theatre Companies",
 			},
 			applications.TenantType{
-				SingularKey:     "school.drama.program",
-				PluralKey:       "school.drama.programs",
-				SingularDefault: "School Drama Program",
-				PluralDefault:   "School Drama Programs",
+				Singular: "School Drama Program",
+				Plural:   "School Drama Programs",
 			},
 			applications.TenantType{
-				SingularKey:     "school.music.program",
-				PluralKey:       "school.music.programs",
-				SingularDefault: "School Music Program",
-				PluralDefault:   "School Music Programs",
+				Singular: "School Music Program",
+				Plural:   "School Music Programs",
 			},
 			applications.TenantType{
-				SingularKey:     "dance.company",
-				PluralKey:       "dance.companies",
-				SingularDefault: "Dance Company",
-				PluralDefault:   "Dance Companies",
+				Singular: "Dance Company",
+				Plural:   "Dance Companies",
 			},
 			applications.TenantType{
-				SingularKey:     "opera.company",
-				PluralKey:       "opera.companies",
-				SingularDefault: "Opera Company",
-				PluralDefault:   "Opera Companies",
+				Singular: "Opera Company",
+				Plural:   "Opera Companies",
 			},
 			applications.TenantType{
-				SingularKey:     "choir",
-				PluralKey:       "choirs",
-				SingularDefault: "Choir",
-				PluralDefault:   "Choirs",
+				Singular: "Choir",
+				Plural:   "Choirs",
 			},
 			applications.TenantType{
-				SingularKey:     "symphony",
-				PluralKey:       "symphonies",
-				SingularDefault: "Symphony",
-				PluralDefault:   "Symphonies",
+				Singular: "Symphony",
+				Plural:   "Symphonies",
 			},
 			applications.TenantType{
-				SingularKey:     "other.arts.group",
-				PluralKey:       "other.arts.groups",
-				SingularDefault: "Other Arts Group",
-				PluralDefault:   "Other Arts Groups",
+				Singular: "Other Arts Group",
+				Plural:   "Other Arts Groups",
 			},
 		},
 	}
@@ -81,7 +65,7 @@ func main() {
 	defaultUser := applications.DefaultAdminUser{
 		FirstName: "System",
 		LastName:  "Administrator",
-		EMail:     "devops@productiongrid.com",
+		EMail:     "jpayne@productiongrid.com",
 		Password:  "test123",
 	}
 
@@ -94,6 +78,21 @@ func main() {
 		Name:              "Production Grid",
 		TagLine:           "Connecting the Performing Arts",
 		ConfigLoader:      rcLoader,
+		TemplateLoader:    rcLoader,
+		EventListeners: []applications.EventListener{
+			&events.LoggingEventListener{},
+			&notifications.NotifyingEventListener{
+				DefaultRecipientListFunc: security.SubscriberRecipientListFunc,
+				Transports: []notifications.Transport{
+					&notifications.TwilioTransport{
+						Config: coreConfig.Notifications.Twilio,
+					},
+					&notifications.SendGridTransport{
+						Config: coreConfig.Notifications.SendGrid,
+					},
+				},
+			},
+		},
 		Modules: []applications.FeatureModule{
 			&security.Module{},
 		},

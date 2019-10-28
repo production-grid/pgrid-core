@@ -21,7 +21,7 @@ func GetHeartbeat(session applications.Session, w http.ResponseWriter, req *http
 	response := HeartBeatResponse{}
 	response.Success = true
 	response.CurrentTime = time.Now().String()
-	response.TenantType = applications.CurrentApplication.TenantLingo.TenantPluralDefault
+	response.TenantType = applications.CurrentApplication.TenantLingo.TenantPlural
 
 	httputils.SendJSON(response, w)
 

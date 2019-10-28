@@ -59,14 +59,12 @@ func (app *Application) Start() {
 
 	if app.TenantLingo == nil {
 		app.TenantLingo = &TenantLingo{
-			TenantSingularKey:     "tenant",
-			TenantPluralKey:       "tenants",
-			TenantSingularDefault: "Tenant",
-			TenantPluralDefault:   "Tenants",
+			TenantSingular: "Tenant",
+			TenantPlural:   "Tenants",
 		}
 	}
 
-	logging.Infof("Starting %v with Lingo for %v...", app.Name, app.TenantLingo.TenantPluralDefault)
+	logging.Infof("Starting %v with Lingo for %v...", app.Name, app.TenantLingo.TenantPlural)
 
 	err := app.initModules()
 

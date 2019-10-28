@@ -56,7 +56,6 @@ func SendError(err error, w http.ResponseWriter) {
 	ack := Acknowledgement{}
 	ack.Success = false
 	ack.Error = err.Error()
-	ack.Description = err.Error()
 
 	if ok {
 		(w).WriteHeader(apiErr.StatusCode)

@@ -58,7 +58,7 @@ export default {
         self.loginProcessing = false
         let loginResponse = response.data
         if (!loginResponse.success) {
-          self.errorMessage = loginResponse.responseDescription
+          self.errorMessage = loginResponse.error
         } else {
           self.$emit('sessionInvalidated')
         }

@@ -12,7 +12,7 @@ const (
 
 // Permission models a permission that might be contributed to the application by a module
 type Permission struct {
-	//identifier and resource bundle key
+	//identifier and resource bundle key (once we get to that)
 	Key string
 
 	//description in the event that it can't be found in a rc bundle
