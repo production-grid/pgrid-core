@@ -98,6 +98,11 @@ func (ref *crudResourceRef) MetaDataPath() string {
 	return ref.Path + "/md"
 }
 
+//AllPath returns the path for returning all data elements for the resource
+func (ref *crudResourceRef) AllPath() string {
+	return ref.Path
+}
+
 //TranscoderFunc is used for copying to and from dtos.
 type TranscoderFunc func(session *Session, req *http.Request, from interface{}, to interface{}) (interface{}, error)
 
@@ -142,6 +147,8 @@ func initRouter(app *Application) error {
 	for _, rc := range app.crudResources {
 		logging.Debugf("Adding Resource Metadata Route %v: /api%v", http.MethodGet, rc.MetaDataPath())
 		apiRouter.HandleFunc(rc.MetaDataPath(), metadataFunctionFor(rc)).Methods(http.MethodGet)
+		logging.Debugf("Adding Resource Route %v: /api%v", http.MethodGet, rc.AllPath())
+		apiRouter.HandleFunc(rc.AllPath(), allFunctionFor(rc)).Methods(http.MethodGet)
 	}
 
 	for _, route := range app.apiRoutes {
