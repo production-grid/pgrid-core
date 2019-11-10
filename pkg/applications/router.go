@@ -65,6 +65,15 @@ type PermissionGroup struct {
 	AuthorizeFunc AuthorizeFunc
 }
 
+// PagedResults models results with paging and sorting metadata
+type PagedResults struct {
+	Page             int           `json:"page"`
+	PageCount        int           `json:"pageCount"`
+	PageSize         int           `json:"pageSize"`
+	TotalResultCount int           `json:"totalResultCount"`
+	VisibleResults   []interface{} `json:"visibleResults"`
+}
+
 // CrudResourcePermissions encapsulates permissions settings for crud resources
 type CrudResourcePermissions struct {
 	TenantScoped      bool
@@ -174,13 +183,37 @@ func allFunctionFor(rc crudResourceRef) http.HandlerFunc {
 			return
 		}
 
-		results, err := rc.Resource.All(session, req)
+		domainResults, err := rc.Resource.All(session, req)
 		if err != nil {
 			httputils.SendError(err, w)
 			return
 		}
 
-		//TODO add paging wrapper and list conversion function
+		visibleResults := make([]interface{}, 0)
+
+		for _, domain := range domainResults {
+			/*
+				Seems redundant, but gives the AuthFunc the ability to block access
+				to individual data elements.
+			*/
+			if isCrudAccessAuthorized(&rc, req, &session, CrudAccessRead, domain) {
+				dto, err := rc.Resource.ToDTO()(&session, req, domain, rc.Resource.NewDTO())
+				if err != nil {
+					httputils.SendError(err, w)
+					return
+				}
+				visibleResults = append(visibleResults, dto)
+			}
+
+		}
+
+		results := PagedResults{
+			Page:             1,
+			TotalResultCount: len(visibleResults),
+			PageCount:        1,
+			PageSize:         len(visibleResults),
+			VisibleResults:   visibleResults,
+		}
 
 		httputils.SendJSON(results, w)
 
