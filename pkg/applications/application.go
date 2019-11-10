@@ -39,6 +39,7 @@ type Application struct {
 	//private stuff
 	schemaFiles   []string
 	apiRoutes     []APIRoute
+	crudResources []crudResourceRef
 	contentRoutes []ContentRoute
 	eventDefs     map[string]EventDef
 	permissions   []Permission
@@ -242,6 +243,11 @@ func (app *Application) addRoutesFrom(mod FeatureModule) error {
 		return err
 	}
 
+	crudResources, err := mod.CrudResources(app)
+	if err != nil {
+		return err
+	}
+
 	if app.apiRoutes == nil {
 		app.apiRoutes = make([]APIRoute, 0)
 	}
@@ -249,6 +255,18 @@ func (app *Application) addRoutesFrom(mod FeatureModule) error {
 		//translate module context
 		route.Path = "/" + mod.ID() + route.Path
 		app.apiRoutes = append(app.apiRoutes, route)
+	}
+
+	if app.crudResources == nil {
+		app.crudResources = make([]crudResourceRef, 0)
+	}
+	for _, rc := range crudResources {
+		ref := crudResourceRef{
+			Path:        "/" + mod.ID() + rc.Path(),
+			Permissions: rc.Permissions(),
+			Resource:    rc,
+		}
+		app.crudResources = append(app.crudResources, ref)
 	}
 
 	//TODO: Server rendered content routes

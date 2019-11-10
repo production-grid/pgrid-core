@@ -4,6 +4,7 @@ export default  {
 
 
   defaultRoutePath(session) {
+
     if (!session.effectivePermissions) {
       return "/login"
     } else {
@@ -93,7 +94,7 @@ export default  {
 
   visibleNavRoutes(session) {
 
-    if (session) {
+    if (session && session.effectivePermissions) {
 
       let results = []
       let keys = Object.keys(this.sectionMap)
@@ -117,6 +118,8 @@ export default  {
       }
 
       return SortService.quickSortAll(results)
+    } else {
+      return null
     }
 
   }

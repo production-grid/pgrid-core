@@ -1,5 +1,6 @@
 import HelloWorld from '@/components/HelloWorld'
 import Login from '@/modules/security/Login'
+import AdminUserList from '@/modules/security/AdminUserList'
 
 export default [
   {
@@ -20,8 +21,8 @@ export default [
   },
   {
     path: '/users',
-    name: 'HelloWorld',
-    component: HelloWorld,
+    name: 'AdminUserList',
+    component: AdminUserList,
     props: true,
     nav: {
       section: 'Security',

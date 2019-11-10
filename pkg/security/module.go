@@ -50,6 +50,17 @@ func (mod *Module) EventDefs(app *applications.Application) []applications.Event
 
 }
 
+//CrudResources declares the Crud API resources provided by this module
+func (mod *Module) CrudResources(app *applications.Application) ([]applications.CrudResource, error) {
+
+	rcs := []applications.CrudResource{
+		&AdminUserResource{},
+	}
+
+	return rcs, nil
+
+}
+
 //APIRoutes declares the API routes provided by this module
 func (mod *Module) APIRoutes(app *applications.Application) ([]applications.APIRoute, error) {
 

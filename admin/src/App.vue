@@ -22,8 +22,8 @@
          </div><!-- header-right -->
        </div><!-- container-fluid -->
      </div><!-- slim-header -->
-     <div class="slim-body" v-if="navRoutes">
-       <div class="slim-sidebar" v-if="session.effectivePermissions">
+     <div class="slim-body">
+       <div class="slim-sidebar" v-if="navRoutes">
          <label class="sidebar-label">Navigation</label>
          <ul class="nav nav-sidebar" v-for="section in navRoutes" v-bind:key="section.caption">
            <li class="sidebar-nav-item with-sub">
@@ -64,7 +64,11 @@ export default {
       APIService.get('/api/security/session', function (response) {
         self.session = response.data
         self.navRoutes = ApplicationService.visibleNavRoutes(self.session)
-        router.push(ApplicationService.defaultRoutePath(self.session))
+
+        let defaultRoute = ApplicationService.defaultRoutePath(self.session)
+        if (defaultRoute !== router.currentRoute.path) {
+          router.push(defaultRoute)
+        }
       })
     },
     makeActive: function (menu) {
@@ -84,6 +88,7 @@ export default {
 
 #content {
   padding: 20px;
+  width: 100%;
 }
 
 </style>
