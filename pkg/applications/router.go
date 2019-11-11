@@ -103,20 +103,14 @@ func (ref *crudResourceRef) AllPath() string {
 	return ref.Path
 }
 
-//TranscoderFunc is used for copying to and from dtos.
-type TranscoderFunc func(session *Session, req *http.Request, from interface{}, to interface{}) (interface{}, error)
-
-//FactoryFunc is used for instantiating new dtos or domains
-type FactoryFunc func(session *Session, req *http.Request) (interface{}, error)
-
 // CrudResource models the contract for level 2 rest API resources
 type CrudResource interface {
 	Path() string
 	Permissions() CrudResourcePermissions
-	ToDTO() TranscoderFunc
-	FromDTO() TranscoderFunc
-	NewDTO() FactoryFunc
-	NewDomain() FactoryFunc
+	ToDTO(session *Session, req *http.Request, from interface{}) (interface{}, error)
+	FromDTO(session *Session, req *http.Request, from interface{}, to interface{}) (interface{}, error)
+	NewDTO(session *Session, req *http.Request) interface{}
+	NewDomain(session *Session, req *http.Request) interface{}
 	MetaData(session Session, req *http.Request) CrudResourceMetaData
 	All(session Session, req *http.Request) ([]interface{}, error)
 	One(session Session, req *http.Request, id string) (interface{}, error)
@@ -204,7 +198,7 @@ func allFunctionFor(rc crudResourceRef) http.HandlerFunc {
 				to individual data elements.
 			*/
 			if isCrudAccessAuthorized(&rc, req, &session, CrudAccessRead, domain) {
-				dto, err := rc.Resource.ToDTO()(&session, req, domain, rc.Resource.NewDTO())
+				dto, err := rc.Resource.ToDTO(&session, req, domain)
 				if err != nil {
 					httputils.SendError(err, w)
 					return

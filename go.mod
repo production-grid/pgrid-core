@@ -1,7 +1,7 @@
 module github.com/production-grid/pgrid-core
 
 require (
-	github.com/blockchyp/blockchyp-core v1.2.2 // indirect
+	github.com/blockchyp/blockchyp-core v1.2.2
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/gorilla/handlers v1.4.2

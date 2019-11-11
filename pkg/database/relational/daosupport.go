@@ -245,6 +245,54 @@ func FindByWhereClause(dbType string, entityFactory EntityFactory, tableName str
 
 }
 
+// FindAll returns all objects in the given table matching the where clause.
+func FindAll(dbType string, entityFactory EntityFactory, tableName string, orderClause string) ([]interface{}, error) {
+
+	prototype := entityFactory()
+
+	model, err := resolveMappingModel(prototype, tableName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	sql := "select id, "
+	sql += strings.Join(model.Columns(), ",")
+	sql += " from "
+	sql += tableName
+	if model.SoftDeleted {
+		sql += " where is_deleted = false"
+	}
+	if orderClause != "" {
+		sql += " "
+		sql += orderClause
+	}
+
+	logging.Tracef("SQL: %v", sql)
+
+	results := make([]interface{}, 0)
+
+	rows, err := resolveDatabaseType(dbType).Query(sql)
+	defer rows.Close()
+
+	if err != nil {
+		logging.Errorf("Find failed: %v", err)
+		return results, err
+	}
+
+	for rows.Next() {
+		target := entityFactory()
+		err := scan(model, rows, target)
+		if err != nil {
+			return results, err
+		}
+		results = append(results, target)
+	}
+
+	return results, nil
+
+}
+
 // FindCount returns the number of activate rows in the table
 func FindCount(dbType string, tableName string, target interface{}) (int, error) {
 

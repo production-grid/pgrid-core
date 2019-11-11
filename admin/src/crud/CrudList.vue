@@ -62,7 +62,7 @@
 </template>
 
 <script>
-import axios from 'axios'
+import APIService from '@/services/APIService'
 import NoResultsAlert from '../components/NoResultsAlert'
 
 export default {
@@ -111,7 +111,7 @@ export default {
       if (self.includeDeleted) {
         url = url + "includeDeleted=true"
       }
-      axios.get(url)
+      APIService.get(url)
         .then(response => {
           self.paging = response.data
           self.results = response.data.results
@@ -120,19 +120,14 @@ export default {
   },
   mounted () {
     let self = this
-    axios.get('/api/' + self.resource + '/md')
-      .then(response => {
-        self.md = response.data
-        axios.get('/api/' + self.resource)
-          .then(response => {
-            self.paging = response.data
-            self.results = response.data.results
-            self.loading = false
-          })
+    APIService.get('/api/' + self.resource + '/md', function (response) {
+      self.md = response.data
+      APIService.get('/api/' + self.resource, function (response) {
+        self.paging = response.data
+        self.results = response.data.visibleResults
+        self.loading = false
       })
-      .catch(function (error) {
-        console.log(error)
-      })
+    })
   }
 }
 </script>

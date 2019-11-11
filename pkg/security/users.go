@@ -7,6 +7,7 @@ import (
 	"github.com/production-grid/pgrid-core/pkg/applications"
 	"github.com/production-grid/pgrid-core/pkg/database/relational"
 	"github.com/production-grid/pgrid-core/pkg/ids"
+	"github.com/production-grid/pgrid-core/pkg/util"
 )
 
 const tableUsers = "users"
@@ -33,6 +34,43 @@ type User struct {
 	LastLogin    *time.Time `col:"last_login"`
 	RegDate      time.Time  `col:"reg_date"`
 	Permissions  []string
+}
+
+// UserDTO models a user in a display friendly format.
+type UserDTO struct {
+	ID           string   `json:"id"`
+	EMail        string   `json:"email"`
+	MobileNumber string   `json:"mobileNumber"`
+	FirstName    string   `json:"firstName"`
+	MiddleName   string   `json:"middleName"`
+	LastName     string   `json:"lastName"`
+	IsLocked     bool     `json:"locked"`
+	TimeZone     string   `json:"timeZone"`
+	LastLogin    string   `json:"lastLogin"`
+	RegDate      string   `json:"regDate"`
+	Permissions  []string `json:"permissions"`
+}
+
+// ToDTO converts this domain struct to a UI friendly version.
+func (user *User) ToDTO(session *applications.Session) UserDTO {
+
+	dto := UserDTO{}
+	dto.ID = user.ID
+	dto.EMail = user.EMail
+	dto.FirstName = user.FirstName
+	dto.MiddleName = user.MiddleName
+	dto.LastName = user.LastName
+	dto.MobileNumber = user.MobileNumber
+	dto.IsLocked = user.IsLocked
+	dto.RegDate = util.FormatShortTimeStamp(user.RegDate.In(session.Location()))
+	if user.LastLogin != nil {
+		dto.LastLogin = util.FormatShortTimeStamp(user.LastLogin.In(session.Location()))
+	} else {
+		dto.LastLogin = "N/A"
+	}
+
+	return dto
+
 }
 
 //Recipient returns the notification recipient struct for this user
@@ -99,6 +137,11 @@ func (finder *UserFinder) FindInterfaceByID(dbType string, id string) (interface
 //FindCount returns the number of users in the system
 func (finder *UserFinder) FindCount(dbType string) (int, error) {
 	return relational.FindCount(dbType, tableUsers, &User{})
+}
+
+//FindAll returns the number of users in the system
+func (finder *UserFinder) FindAll(dbType string) ([]interface{}, error) {
+	return relational.FindAll(dbType, NewUser, tableUsers, "order by last_name, first_name")
 }
 
 //FindByPermission returns a user granted the given permission

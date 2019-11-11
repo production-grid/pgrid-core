@@ -3,9 +3,7 @@
   breadcrumbCategory="Security"
   resource="security/admin/users"
   clickRoute="/admin-user-edit"
-  newRoute="/new-admin-user"
-  searchEnabled="true"
-  includeDeletedOption="true"/>
+  newRoute="/new-admin-user"/>
 </template>
 
 <script>

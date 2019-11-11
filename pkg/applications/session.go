@@ -1,6 +1,14 @@
 package applications
 
-import "net/http"
+import (
+	"net/http"
+	"time"
+
+	"github.com/production-grid/pgrid-core/pkg/logging"
+)
+
+//default time zone is the theatre capitol of the world
+const DefaultTimeZone = "America/New_York"
 
 //Session models an interactive sesion
 type Session struct {
@@ -9,7 +17,31 @@ type Session struct {
 	FirstName            string
 	LastName             string
 	TenantID             string
+	TimeZone             string
 	EffectivePermissions map[string]bool //because maps are faster lookups
+}
+
+//Location returns the timezone/location for a given session.
+func (session *Session) Location() *time.Location {
+
+	if session.TimeZone != "" {
+		loc, err := time.LoadLocation(session.TimeZone)
+		if err != nil {
+			logging.Warnf("Unable to load time zone: %v\n", session.TimeZone)
+		} else {
+			return loc
+		}
+	}
+
+	loc, err := time.LoadLocation(DefaultTimeZone)
+
+	if err != nil {
+		//this should never happen
+		panic(err)
+	}
+
+	return loc
+
 }
 
 //HasPermission returns true if session has the effective permission
