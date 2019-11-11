@@ -126,6 +126,78 @@
           ]
         }
       ]
+    },
+    {
+      "name": "tenants",
+      "columns": [
+        {
+          "name": "id",
+          "type": "CHAR",
+          "size": 26,
+          "nullable": false,
+          "primaryKey": true
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR",
+          "size": 64,
+          "nullable": false
+        },
+        {
+          "name": "tenant_type",
+          "type": "VARCHAR",
+          "size": 64,
+          "nullable": false
+        },
+        {
+          "name": "tagline",
+          "type": "VARCHAR",
+          "size": 64,
+          "nullable": false
+        },
+        {
+          "name": "subdomain",
+          "type": "VARCHAR",
+          "size": 32,
+          "nullable": false
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "name": "time_zone",
+          "type": "VARCHAR",
+          "size": 32,
+          "nullable": true
+        },
+        {
+          "name": "last_login",
+          "type": "TIMESTAMP",
+          "nullable": true
+        },
+        {
+          "name": "created_date",
+          "type": "TIMESTAMP",
+          "nullable": false
+        },
+        {
+          "name": "is_deleted",
+          "type": "BOOLEAN",
+          "nullable": false,
+          "defaultValue": "false"
+        }
+      ],
+      "indices": [
+        {
+          "name": "unq_subdomain",
+          "unique": true,
+          "columnNames": [
+            "subdomain"
+          ]
+        }
+      ]
     }
   ]
 }

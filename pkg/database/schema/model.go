@@ -22,6 +22,10 @@ func IsSoftDeleted(tableName string) bool {
 
 	table := TableModel(tableName)
 
+	if table == nil {
+		panic("table doesn't exist: " + tableName)
+	}
+
 	for _, col := range table.Columns {
 		if col.Name == "is_deleted" {
 			return true
