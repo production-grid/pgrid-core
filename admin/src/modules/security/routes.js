@@ -1,4 +1,3 @@
-import HelloWorld from '@/components/HelloWorld'
 import Login from '@/modules/security/Login'
 import AdminUserList from '@/modules/security/AdminUserList'
 import TenantList from '@/modules/security/TenantList'
@@ -21,8 +20,8 @@ export default [
   },
   {
     path: '/groups',
-    name: 'HelloWorld',
-    component: HelloWorld,
+    name: 'AdminUserList',
+    component: AdminUserList,
     props: true,
     nav: {
       section: 'Security',
