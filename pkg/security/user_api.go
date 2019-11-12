@@ -20,19 +20,31 @@ type LoginRequest struct {
 
 //SessionDTO models an interactive sesion
 type SessionDTO struct {
-	UserID               string   `json:"userId"`
-	FirstName            string   `json:"firstName"`
-	LastName             string   `json:"lastName"`
-	TenantID             string   `json:"tenantId,omitempty"`
-	TenantName           string   `json:"tenantName,omitempty"`
-	AdminLogo            string   `json:"adminLogo,omitempty"`
-	ApplicationName      string   `json:"applicationName"`
-	TagLine              string   `json:"tagline"`
-	EffectivePermissions []string `json:"effectivePermissions"`
+	UserID               string          `json:"userId"`
+	FirstName            string          `json:"firstName"`
+	LastName             string          `json:"lastName"`
+	TenantID             string          `json:"tenantId,omitempty"`
+	TenantName           string          `json:"tenantName,omitempty"`
+	AdminLogo            string          `json:"adminLogo,omitempty"`
+	ApplicationName      string          `json:"applicationName"`
+	TagLine              string          `json:"tagline"`
+	TenantPlural         string          `json:"tenantPlural"`
+	TenantSingular       string          `json:"tenantSingular"`
+	RootTenantHost       string          `json:"rootTenantHost"`
+	EffectivePermissions []string        `json:"effectivePermissions"`
+	TenantTypes          []TenantTypeDTO `json:"tenantTypes"`
+}
+
+//TenantTypeDTO models human readable information about tenant types
+type TenantTypeDTO struct {
+	Singular string `json:"singular"`
+	Plural   string `json:"plural"`
 }
 
 //GetSession returns session meta data
 func GetSession(session applications.Session, w http.ResponseWriter, req *http.Request) {
+
+	lingo := applications.CurrentApplication.TenantLingo
 
 	dto := SessionDTO{
 		UserID:          session.UserID,
@@ -41,7 +53,19 @@ func GetSession(session applications.Session, w http.ResponseWriter, req *http.R
 		TenantID:        session.TenantID,
 		ApplicationName: applications.CurrentApplication.Name,
 		TagLine:         applications.CurrentApplication.TagLine,
+		TenantPlural:    lingo.TenantPlural,
+		TenantSingular:  lingo.TenantSingular,
+		RootTenantHost:  applications.CurrentApplication.CoreConfiguration.RootTenantHost,
 	}
+
+	tenantTypes := make([]TenantTypeDTO, len(lingo.Types))
+	for idx, tenantType := range lingo.Types {
+		tenantTypes[idx] = TenantTypeDTO{
+			Singular: tenantType.Singular,
+			Plural:   tenantType.Plural,
+		}
+	}
+	dto.TenantTypes = tenantTypes
 
 	if session.EffectivePermissions != nil {
 		perms := make([]string, 0)

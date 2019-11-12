@@ -1,4 +1,5 @@
 import SortService from '@/services/SortService'
+let handlebars = require('handlebars')
 
 export default  {
 
@@ -8,7 +9,7 @@ export default  {
     if (!session.effectivePermissions) {
       return "/login"
     } else {
-      return "/hello"
+      return "/tenants"
     }
   },
 
@@ -61,9 +62,6 @@ export default  {
       return true
     }
 
-    console.log(route)
-    console.log(session.effectivePermissions)
-
     if (route.nav.permission && !session.effectivePermissions.includes(route.nav.permission)) {
       return false
     }
@@ -109,6 +107,8 @@ export default  {
         for (var r = 0; r < section.routes.length; r++) {
           let route = section.routes[r]
           if (this.isAuthorized(route, session)) {
+            let captionTmpl = handlebars.compile(route.nav.caption)
+            route.nav.caption = captionTmpl({session: session})
             routes.push(route)
           }
         }

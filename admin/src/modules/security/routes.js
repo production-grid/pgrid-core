@@ -1,33 +1,19 @@
 import HelloWorld from '@/components/HelloWorld'
 import Login from '@/modules/security/Login'
 import AdminUserList from '@/modules/security/AdminUserList'
+import TenantList from '@/modules/security/TenantList'
+import TenantEdit from '@/modules/security/TenantEdit'
 
 export default [
-  {
-    path: '/hello',
-    name: 'HelloWorld',
-    component: HelloWorld,
-    props: true,
-    nav: {
-      section: 'Security',
-      sectionIndex: 1,
-      sectionIconClass: 'fas fa-shield-alt',
-      caption: 'Hello!',
-      index: 0,
-      permission: "security.perm.user",
-      allRequired: [],
-      anyRequired: []
-    }
-  },
   {
     path: '/users',
     name: 'AdminUserList',
     component: AdminUserList,
     props: true,
     nav: {
+      index: 2,
       section: 'Security',
       caption: 'Users',
-      index: 1,
       permission: "security.perm.admin",
       allRequired: ["security.perm.admin","security.perm.user"],
       anyRequired: ["security.perm.admin","security.perm.user"]
@@ -41,17 +27,19 @@ export default [
     nav: {
       section: 'Security',
       caption: 'Groups',
+      index: 3,
       permission: "security.perm.admin"
     }
   },
   {
     path: '/tenants',
-    name: 'HelloWorld',
-    component: HelloWorld,
+    name: 'TenantList',
+    component: TenantList,
     props: true,
     nav: {
+      index: 1,
       section: 'Security',
-      caption: 'Tenants',
+      caption: '{{session.tenantPlural}}',
       permission: "security.perm.admin",
     }
   },
@@ -59,6 +47,18 @@ export default [
     path: '/login',
     name: 'Login',
     component: Login,
+    props: true
+  },
+  {
+    path: '/tenant-edit',
+    name: 'tenant-edit',
+    component: TenantEdit,
+    props: true
+  },
+  {
+    path: '/tenant-edit/:id',
+    name: 'tenant-edit',
+    component: TenantEdit,
     props: true
   }
 ]

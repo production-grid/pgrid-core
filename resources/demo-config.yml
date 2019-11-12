@@ -1,4 +1,5 @@
 name: Production Grid Demo
+root_tenant_host: productiongrid.com
 port: 8000
 database:
   primary:

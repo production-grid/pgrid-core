@@ -38,6 +38,8 @@ type CrudField struct {
 	Min           int    `json:"min"`
 	Max           int    `json:"max"`
 	Mutable       bool   `json:"mutable"`
+	HideIfEmpty   bool   `json:"hideIfEmpty"`
+	ColumnStyle   string `json:"columnStyle"`
 }
 
 // CrudFieldSet contains a group of fields.

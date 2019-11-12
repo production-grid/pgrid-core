@@ -1,0 +1,159 @@
+<template>
+  <div>
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text">$</span>
+      </div>
+      <input type="text" v-if="isMutable"
+        class="form-control"
+        :class="{'validated-control': validated, 'is-invalid': !valid}"
+        ref="input"
+        :id="elementId"
+        v-bind:value="value"
+        :name="elementId"
+        placeholder="0.00"
+        :readonly="readOnly"
+        @input="emitValue"
+        @keypress="handleKeyPress"
+        @keyup="handleKeyUp"
+        @blur="validate"
+        :required="isRequired"/>
+      <span class="form-control is-disabled" v-if="!isMutable">{{value}}</span>
+    </div>
+    <div class="error-feedback" v-if="!valid">
+      <ul>
+        <li v-for="error in errors" v-bind:key="error">{{error}}</li>
+      </ul>
+    </div>
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'currency-input',
+  props: ['value', 'required', 'field', 'addOnCaption', 'validated', 'id', 'disabled', 'lt', 'gt', 'readOnly'],
+  data: () => ({
+    valid: true,
+    errors: []
+  }),
+  watch: {
+    'value': function(value) {
+      this.formatValue(value)
+    }
+  },
+  computed: {
+    elementId: function () {
+      if (this.field) {
+        return this.field.id
+      } else {
+        return this.id
+      }
+    },
+    isRequired: function () {
+      if (this.field) {
+        return this.field.required
+      } else {
+        return this.required
+      }
+    },
+    isMutable: function () {
+      if (this.disabled) {
+        return false
+      } else if (this.field) {
+        return this.field.mutable
+      } else {
+        return true
+      }
+    }
+  },
+  methods: {
+    validate: function (e) {
+
+      this.$emit('blur', e)
+
+      let self = this
+      self.errors = []
+
+      if (this.value) {
+        self.valid = true
+        if (self.lt || self.gt) {
+          let currentValue = parseFloat(self.value)
+          if (self.lt) {
+            let ltValue = parseFloat(self.lt)
+            if (currentValue > ltValue) {
+              self.valid = false
+              self.errors.push("Must be less than $" + self.lt + ".")
+            }
+          }
+          if (self.gt) {
+            let gtValue = parseFloat(self.gt)
+            if (currentValue < gtValue) {
+              self.valid = false
+              self.errors.push("Must be greater than $" + self.gt + ".")
+            }
+          }
+        }
+      } else if (this.isRequired) {
+        self.valid = false
+      }
+
+    },
+    sendClickEvent: function () {
+      this.$emit('addOnClicked', '')
+    },
+    isNumeric: function (n) {
+      return !isNaN(parseFloat(n)) && isFinite(n);
+    },
+    handleKeyPress: function(e) {
+
+      if (e.key === 'Delete') {
+        return
+      } else if (e.key == 'Backspace') {
+        return
+      } else if (!this.isNumeric(e.key) && e.key !== '.') {
+        e.preventDefault()
+      }
+
+    },
+    formatValue: function (currentString) {
+
+      if (!currentString) {
+        return
+      }
+      let baseString = ''
+
+      for (var i = 0; i < currentString.length; i++) {
+        let char = currentString.charAt(i)
+
+        if (this.isNumeric(char) || char === '.') {
+          baseString = baseString + char
+        }
+      }
+      this.$emit('input', baseString)
+    },
+    handleKeyUp: function (e) {
+      this.formatValue(e.target.value)
+    },
+    emitValue: function () {
+      //this.$emit('input', e.target.value)
+    }
+  },
+  mounted () {
+    this.formatValue(this.value)
+  }
+}
+</script>
+
+<!-- Add "scoped" attribute to limit CSS to this component only -->
+<style scoped>
+
+span.is-disabled {
+  background-color: #EEEEEE;
+}
+
+.error-feedback {
+  color: red;
+  font-size: 8pt;
+}
+
+</style>

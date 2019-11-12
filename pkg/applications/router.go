@@ -98,8 +98,23 @@ func (ref *crudResourceRef) MetaDataPath() string {
 	return ref.Path + "/md"
 }
 
+//MetaDataPath returns the meta data path for the resource
+func (ref *crudResourceRef) OnePath() string {
+	return ref.Path + "/{id}"
+}
+
+//MetaDataPath returns the meta data path for the resource
+func (ref *crudResourceRef) DeletePath() string {
+	return ref.Path + "/{id}"
+}
+
 //AllPath returns the path for returning all data elements for the resource
 func (ref *crudResourceRef) AllPath() string {
+	return ref.Path
+}
+
+//AllPath returns the path for returning all data elements for the resource
+func (ref *crudResourceRef) UpdatePath() string {
 	return ref.Path
 }
 
@@ -111,19 +126,24 @@ type CrudResource interface {
 	FromDTO(session *Session, req *http.Request, from interface{}, to interface{}) (interface{}, error)
 	NewDTO(session *Session, req *http.Request) interface{}
 	NewDomain(session *Session, req *http.Request) interface{}
-	MetaData(session Session, req *http.Request) CrudResourceMetaData
-	All(session Session, req *http.Request) ([]interface{}, error)
-	One(session Session, req *http.Request, id string) (interface{}, error)
-	Update(session Session, req *http.Request, dto interface{}, domain interface{}) (interface{}, error)
-	Delete(session Session, req *http.Request, id string) (bool, error)
+	MetaData(session *Session, req *http.Request) CrudResourceMetaData
+	All(session *Session, req *http.Request) ([]interface{}, error)
+	One(session *Session, req *http.Request, id string) (interface{}, error)
+	Update(session *Session, req *http.Request, dto interface{}, domain interface{}) (interface{}, error)
+	Delete(session *Session, req *http.Request, domain interface{}) (bool, error)
 }
 
 // PagableCrudResource adds search, paging, and sort functionality to a basic API resource
 type PagableCrudResource interface {
 	CrudResource
-	Page(session Session, w http.ResponseWriter, req *http.Request)
-	Sort(session Session, w http.ResponseWriter, req *http.Request)
-	Search(session Session, w http.ResponseWriter, req *http.Request)
+	Page(session *Session, w http.ResponseWriter, req *http.Request)
+	Sort(session *Session, w http.ResponseWriter, req *http.Request)
+	Search(session *Session, w http.ResponseWriter, req *http.Request)
+}
+
+// DTO specifies the contract for DTO's
+type DTO interface {
+	Identifier() string
 }
 
 //SecureHandlerFunc is
@@ -141,8 +161,14 @@ func initRouter(app *Application) error {
 	for _, rc := range app.crudResources {
 		logging.Debugf("Adding Resource Metadata Route %v: /api%v", http.MethodGet, rc.MetaDataPath())
 		apiRouter.HandleFunc(rc.MetaDataPath(), metadataFunctionFor(rc)).Methods(http.MethodGet)
-		logging.Debugf("Adding Resource Route %v: /api%v", http.MethodGet, rc.AllPath())
+		logging.Debugf("Adding Resource All Route %v: /api%v", http.MethodGet, rc.AllPath())
 		apiRouter.HandleFunc(rc.AllPath(), allFunctionFor(rc)).Methods(http.MethodGet)
+		logging.Debugf("Adding Resource One Route %v: /api%v", http.MethodGet, rc.OnePath())
+		apiRouter.HandleFunc(rc.OnePath(), oneFunctionFor(rc)).Methods(http.MethodGet)
+		logging.Debugf("Adding Resource Update Route %v: /api%v", http.MethodPost, rc.UpdatePath())
+		apiRouter.HandleFunc(rc.UpdatePath(), updateFunctionFor(rc)).Methods(http.MethodPost)
+		logging.Debugf("Adding Resource Delete Route %v: /api%v", http.MethodDelete, rc.DeletePath())
+		apiRouter.HandleFunc(rc.DeletePath(), deleteFunctionFor(rc)).Methods(http.MethodDelete)
 	}
 
 	for _, route := range app.apiRoutes {
@@ -168,6 +194,168 @@ func initRouter(app *Application) error {
 
 }
 
+func updateFunctionFor(rc crudResourceRef) http.HandlerFunc {
+
+	return func(w http.ResponseWriter, req *http.Request) {
+
+		session, err := resolveSession(req)
+
+		if err != nil {
+			httputils.SendError(err, w)
+			return
+		}
+
+		if !isCrudAccessAuthorized(&rc, req, &session, CrudAccessUpdate, nil) {
+			httputils.Send403(w)
+			return
+		}
+
+		if err != nil {
+			httputils.SendError(err, w)
+			return
+		}
+
+		rawDto := rc.Resource.NewDTO(&session, req)
+
+		if httputils.ConsumeRequestBody(&rawDto, w, req) {
+
+			dto := rawDto.(DTO)
+
+			if err != nil {
+				httputils.SendError(err, w)
+				return
+			}
+
+			var domain interface{}
+			var err error
+
+			if dto.Identifier() != "" {
+				domain, err = rc.Resource.One(&session, req, dto.Identifier())
+
+				if err != nil {
+					httputils.SendError(err, w)
+					return
+				}
+				if !isCrudAccessAuthorized(&rc, req, &session, CrudAccessUpdate, domain) {
+					httputils.Send403(w)
+					return
+				}
+			} else {
+				domain = rc.Resource.NewDomain(&session, req)
+			}
+
+			updatedDomain, err := rc.Resource.FromDTO(&session, req, dto, domain)
+			if err != nil {
+				httputils.SendError(err, w)
+				return
+			}
+
+			updatedDomain, err = rc.Resource.Update(&session, req, rawDto, updatedDomain)
+
+			if err != nil {
+				httputils.SendError(err, w)
+				return
+			}
+
+			updatedDto, err := rc.Resource.ToDTO(&session, req, updatedDomain)
+			if err != nil {
+				httputils.SendError(err, w)
+				return
+			}
+
+			httputils.SendJSON(updatedDto, w)
+
+		}
+
+	}
+
+}
+
+func deleteFunctionFor(rc crudResourceRef) http.HandlerFunc {
+
+	return func(w http.ResponseWriter, req *http.Request) {
+
+		session, err := resolveSession(req)
+
+		if err != nil {
+			httputils.SendError(err, w)
+			return
+		}
+
+		if !isCrudAccessAuthorized(&rc, req, &session, CrudAccessRead, nil) {
+			httputils.Send403(w)
+			return
+		}
+
+		vars := mux.Vars(req)
+
+		domain, err := rc.Resource.One(&session, req, vars["id"])
+		if err != nil {
+			httputils.SendError(err, w)
+			return
+		}
+
+		if !isCrudAccessAuthorized(&rc, req, &session, CrudAccessRead, domain) {
+			httputils.Send403(w)
+			return
+		}
+
+		ok, err := rc.Resource.Delete(&session, req, domain)
+		if err != nil {
+			httputils.SendError(err, w)
+			return
+		}
+
+		if !ok {
+			httputils.SendJSON(httputils.Acknowledgement{Success: false, Error: "Delete Failed"}, w)
+		} else {
+			httputils.SendJSON(httputils.Acknowledgement{Success: true}, w)
+		}
+
+	}
+
+}
+
+func oneFunctionFor(rc crudResourceRef) http.HandlerFunc {
+
+	return func(w http.ResponseWriter, req *http.Request) {
+
+		session, err := resolveSession(req)
+
+		if err != nil {
+			httputils.SendError(err, w)
+			return
+		}
+
+		if !isCrudAccessAuthorized(&rc, req, &session, CrudAccessRead, nil) {
+			httputils.Send403(w)
+			return
+		}
+
+		vars := mux.Vars(req)
+
+		domain, err := rc.Resource.One(&session, req, vars["id"])
+		if err != nil {
+			httputils.SendError(err, w)
+			return
+		}
+
+		if !isCrudAccessAuthorized(&rc, req, &session, CrudAccessRead, domain) {
+			httputils.Send403(w)
+			return
+		}
+		dto, err := rc.Resource.ToDTO(&session, req, domain)
+		if err != nil {
+			httputils.SendError(err, w)
+			return
+		}
+
+		httputils.SendJSON(dto, w)
+
+	}
+
+}
+
 func allFunctionFor(rc crudResourceRef) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, req *http.Request) {
@@ -184,7 +372,7 @@ func allFunctionFor(rc crudResourceRef) http.HandlerFunc {
 			return
 		}
 
-		domainResults, err := rc.Resource.All(session, req)
+		domainResults, err := rc.Resource.All(&session, req)
 		if err != nil {
 			httputils.SendError(err, w)
 			return
@@ -238,7 +426,7 @@ func metadataFunctionFor(rc crudResourceRef) http.HandlerFunc {
 			return
 		}
 
-		md := rc.Resource.MetaData(session, req)
+		md := rc.Resource.MetaData(&session, req)
 
 		httputils.SendJSON(md, w)
 

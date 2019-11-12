@@ -54,7 +54,7 @@ func (rc *AdminUserResource) NewDomain(session *applications.Session, req *http.
 }
 
 //MetaData returns metadata about the this resource.  Used for rendering the UI.
-func (rc *AdminUserResource) MetaData(session applications.Session, req *http.Request) applications.CrudResourceMetaData {
+func (rc *AdminUserResource) MetaData(session *applications.Session, req *http.Request) applications.CrudResourceMetaData {
 
 	crud := applications.NewCrudMetaData()
 	crud.ListPageTitle = "Users"
@@ -89,7 +89,7 @@ func (rc *AdminUserResource) MetaData(session applications.Session, req *http.Re
 }
 
 // All returns all visible domain objects with their default sorting
-func (rc *AdminUserResource) All(session applications.Session, req *http.Request) ([]interface{}, error) {
+func (rc *AdminUserResource) All(session *applications.Session, req *http.Request) ([]interface{}, error) {
 
 	userFinder := UserFinder{}
 
@@ -98,16 +98,16 @@ func (rc *AdminUserResource) All(session applications.Session, req *http.Request
 }
 
 //One returns a single domain object
-func (rc *AdminUserResource) One(session applications.Session, req *http.Request, id string) (interface{}, error) {
+func (rc *AdminUserResource) One(session *applications.Session, req *http.Request, id string) (interface{}, error) {
 	return nil, nil
 }
 
 //Update creates or updates an entity, returning the entity after it's been created or upudated
-func (rc *AdminUserResource) Update(session applications.Session, req *http.Request, dto interface{}, domain interface{}) (interface{}, error) {
+func (rc *AdminUserResource) Update(session *applications.Session, req *http.Request, dto interface{}, domain interface{}) (interface{}, error) {
 	return domain, nil
 }
 
 //Delete deletes an entity from the system, returning true if the operation succeeded
-func (rc *AdminUserResource) Delete(session applications.Session, req *http.Request, id string) (bool, error) {
+func (rc *AdminUserResource) Delete(session *applications.Session, req *http.Request, domain interface{}) (bool, error) {
 	return false, nil
 }

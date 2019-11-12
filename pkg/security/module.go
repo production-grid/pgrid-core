@@ -55,6 +55,7 @@ func (mod *Module) CrudResources(app *applications.Application) ([]applications.
 
 	rcs := []applications.CrudResource{
 		&AdminUserResource{},
+		&TenantResource{},
 	}
 
 	return rcs, nil

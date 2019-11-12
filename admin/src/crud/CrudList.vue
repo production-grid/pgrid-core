@@ -34,7 +34,7 @@
              <tbody>
                <tr v-for="result in results"  v-bind:key="result.id" v-bind:data-test-id="result.id" data-test-class="subscriber-row">
                  <td v-for="column in md.columns" v-bind:key="column.id">
-                   <router-link :to="{ path: clickRoute, query: { id: result.id }}">{{result[column.id]}}</router-link>
+                   <router-link :to="clickRoute + '/' + result.id">{{result[column.id]}}</router-link>
                  </td>
                </tr>
              </tbody>
