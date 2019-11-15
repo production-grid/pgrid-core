@@ -19,6 +19,9 @@
        <currency-input v-if="field.dataType == 'currency'" :value="value" :field="field" @input="emitValue" :mode="mode"/>
        <subdomain-input v-if="field.dataType == 'subdomain'" :value="value" :field="field" @input="emitValue" :mode="mode" :session="session"/>
        <tenant-type-input v-if="field.dataType == 'tenant-type'" :value="value" :field="field" @input="emitValue" :mode="mode" :session="session"/>
+       <permissions-input v-if="field.dataType == 'admin-permissions'" :value="value" :field="field" @input="emitValue" :mode="mode" :session="session" permSource="/api/security/admin/perms"/>
+       <permissions-input v-if="field.dataType == 'tenant-permissions'" :value="value" :field="field" @input="emitValue" :mode="mode" :session="session" permSource="/api/security/tenant/perms"/>
+
        <!-- End input widgets -->
 
        <div class="help-block" v-if="field.help">{{field.help}}</div>
@@ -28,7 +31,6 @@
 
 <script>
 import AddressWidget from '../widgets/AddressWidget'
-import AdminRolesInput from '../widgets/AdminRolesInput'
 import BooleanInput from '../widgets/BooleanInput'
 import CheckboxInput from '../widgets/CheckboxInput'
 import HourInput from '../widgets/HourInput'
@@ -39,13 +41,13 @@ import TimeZoneInput from '../widgets/TimeZoneInput'
 import CurrencyInput from '../widgets/CurrencyInput'
 import SubdomainInput from '../widgets/SubdomainInput'
 import TenantTypeInput from '../widgets/TenantTypeInput'
+import PermissionsInput from '../widgets/PermissionsInput'
 
 export default {
   name: 'crud-input',
   props: ['value', 'field', 'form', 'mode', 'columnStyle', 'additionalStyles', 'session'],
   components: {
     'address-widget': AddressWidget,
-    'admin-roles-input': AdminRolesInput,
     'boolean-input': BooleanInput,
     'checkbox-input': CheckboxInput,
     'hour-input': HourInput,
@@ -56,6 +58,7 @@ export default {
     'currency-input': CurrencyInput,
     'subdomain-input': SubdomainInput,
     'tenant-type-input': TenantTypeInput,
+    'permissions-input': PermissionsInput
   },
   data: () => ({
   }),

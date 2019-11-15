@@ -67,9 +67,14 @@ type PermissionGroup struct {
 
 // PagedResults models results with paging and sorting metadata
 type PagedResults struct {
-	Page             int           `json:"page"`
-	PageCount        int           `json:"pageCount"`
-	PageSize         int           `json:"pageSize"`
+	Results
+	Page      int `json:"page"`
+	PageCount int `json:"pageCount"`
+	PageSize  int `json:"pageSize"`
+}
+
+// Results models results without paging and sorting metadata
+type Results struct {
 	TotalResultCount int           `json:"totalResultCount"`
 	VisibleResults   []interface{} `json:"visibleResults"`
 }
@@ -397,12 +402,13 @@ func allFunctionFor(rc crudResourceRef) http.HandlerFunc {
 		}
 
 		results := PagedResults{
-			Page:             1,
-			TotalResultCount: len(visibleResults),
-			PageCount:        1,
-			PageSize:         len(visibleResults),
-			VisibleResults:   visibleResults,
+			Page:      1,
+			PageCount: 1,
+			PageSize:  len(visibleResults),
 		}
+
+		results.TotalResultCount = len(visibleResults)
+		results.VisibleResults = visibleResults
 
 		httputils.SendJSON(results, w)
 

@@ -8,6 +8,7 @@ const (
 	PermScopeAdmin    PermScope = iota //admin level permission mapped at the user level or user group level
 	PermScopePersonal                  //non admin permisions that are still scoped at the user level (personal permissions)
 	PermScopeTenant                    //permissions that only make sense in the context of a tenant
+	PermScopeAll                       //matches all permissions
 )
 
 // Permission models a permission that might be contributed to the application by a module

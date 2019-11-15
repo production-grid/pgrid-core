@@ -104,7 +104,7 @@ import CrudPanel from './CrudPanel'
 
 export default {
   name: 'crud-form-content-block',
-  props: ['globalState', 'breadcrumbCategory', 'resource', 'id', 'listRoute', 'extraRoutes', 'mode', 'singleton', 'titleField', 'router', "columnStyle", "session"],
+  props: ['globalState', 'breadcrumbCategory', 'resource', 'id', 'listRoute', 'extraRoutes', 'mode', 'singleton', 'titleField', 'router', "columnStyle", "session", "newForm"],
   components: {
     'delete-modal': DeleteModal,
     'crud-panel': CrudPanel
@@ -167,6 +167,8 @@ export default {
       self.md = response.data
       if (self.id || self.isSingleton) {
         self.loadFormData()
+      } else if (self.newForm) {
+        self.form = self.newForm
       }
     })
   },

@@ -336,6 +336,21 @@ func (app *Application) AllPermKeys(permScope PermScope) []string {
 
 }
 
+// AllPermissions returns all permission codes for the given scope
+func (app *Application) AllPermissions(permScope PermScope) []Permission {
+
+	results := make([]Permission, 0)
+
+	for _, perm := range app.permissions {
+		if permScope == PermScopeAll || perm.Scope == permScope {
+			results = append(results, perm)
+		}
+	}
+
+	return results
+
+}
+
 func (app *Application) clearTransientState() {
 
 	app.Router = nil

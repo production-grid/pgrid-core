@@ -56,6 +56,7 @@ func (mod *Module) CrudResources(app *applications.Application) ([]applications.
 	rcs := []applications.CrudResource{
 		&AdminUserResource{},
 		&TenantResource{},
+		&AdminGroupResource{},
 	}
 
 	return rcs, nil
@@ -91,6 +92,14 @@ func (mod *Module) APIRoutes(app *applications.Application) ([]applications.APIR
 			Route: applications.Route{
 				Path:        "/session",
 				HandlerFunc: GetSession,
+			},
+			Method: http.MethodGet,
+		},
+		applications.APIRoute{
+			Route: applications.Route{
+				Path:        "/admin/perms",
+				HandlerFunc: GetAdminPerms,
+				Permission:  PermAdmin,
 			},
 			Method: http.MethodGet,
 		},

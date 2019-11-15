@@ -198,6 +198,138 @@
           ]
         }
       ]
+    },
+    {
+      "name": "admin_groups",
+      "columns": [
+        {
+          "name": "id",
+          "type": "CHAR",
+          "size": 26,
+          "nullable": false,
+          "primaryKey": true
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR",
+          "size": 64,
+          "nullable": false
+        },
+        {
+          "name": "created_date",
+          "type": "TIMESTAMP",
+          "nullable": false
+        },
+        {
+          "name": "is_deleted",
+          "type": "BOOLEAN",
+          "nullable": false,
+          "defaultValue": "false"
+        }
+      ]
+    },
+    {
+      "name": "admin_group_perms",
+      "columns": [
+        {
+          "name": "id",
+          "type": "CHAR",
+          "size": 26,
+          "nullable": false,
+          "primaryKey": true
+        },
+        {
+          "name": "admin_group_id",
+          "type": "CHAR",
+          "size": 32,
+          "nullable": false,
+          "primaryKey": true,
+          "foreignKey": {
+            "tableName": "admin_groups",
+            "name": "fk_perm_admin_group"
+          }
+        },
+        {
+          "name": "permission",
+          "type": "VARCHAR",
+          "size": 64,
+          "nullable": false
+        }
+      ],
+      "indices": [
+        {
+          "name": "idx_admin_group_perms",
+          "columnNames": [
+            "permission"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "tenant_groups",
+      "columns": [
+        {
+          "name": "id",
+          "type": "CHAR",
+          "size": 26,
+          "nullable": false,
+          "primaryKey": true
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR",
+          "size": 64,
+          "nullable": false
+        },
+        {
+          "name": "created_date",
+          "type": "TIMESTAMP",
+          "nullable": false
+        },
+        {
+          "name": "is_deleted",
+          "type": "BOOLEAN",
+          "nullable": false,
+          "defaultValue": "false"
+        }
+      ]
+    },
+    {
+      "name": "tenant_group_perms",
+      "columns": [
+        {
+          "name": "id",
+          "type": "CHAR",
+          "size": 26,
+          "nullable": false,
+          "primaryKey": true
+        },
+        {
+          "name": "tenant_group_id",
+          "type": "CHAR",
+          "size": 32,
+          "nullable": false,
+          "primaryKey": true,
+          "foreignKey": {
+            "tableName": "tenant_groups",
+            "name": "fk_perm_tenant_group"
+          }
+        },
+        {
+          "name": "permission",
+          "type": "VARCHAR",
+          "size": 64,
+          "nullable": false
+        }
+      ],
+      "indices": [
+        {
+          "name": "idx_tenant_group_perms",
+          "columnNames": [
+            "permission"
+          ]
+        }
+      ]
     }
   ]
 }
