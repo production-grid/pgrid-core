@@ -87,6 +87,13 @@
           "columnNames": [
             "email"
           ]
+        },
+        {
+          "name": "unq_user_mobile",
+          "unique": true,
+          "columnNames": [
+            "mobile_number"
+          ]
         }
       ]
     },

@@ -1,29 +1,11 @@
 <template>
   <div class="slim-mainpanel">
     <div class="container">
-      <div class="slim-pageheader">
-        <ol class="breadcrumb slim-breadcrumb">
-          <li class="breadcrumb-item" v-if="breadcrumbCategory">{{breadcrumbCategory}}</li>
-          <li class="breadcrumb-item active" aria-current="page">{{md.listPageTitle}}</li>
-        </ol>
-        <h6 class="slim-pagetitle">{{md.listPageTitle}}</h6>
-      </div><!-- slim-pageheader -->
+      <page-header :breadcrumbCategory="breadcrumbCategory" :pageTitle="md.listPageTitle"/>
       <div class="section-wrapper">
-         <label class="section-title">{{md.listPageTitle}} <router-link v-if="!md.newDisabled" :to="{ path: newLink}" class="float-right btn btn-sm btn-outline-primary"><i class="fa fa-plus"></i> {{md.newFormTitle}}</router-link></label>
-         <p class="mg-b-20 mg-sm-b-40">{{md.listPageHelp}}</p>
-         <div class="search-panel mg-b-5 row" v-if="searchEnabled">
-           <div class="col-md-5">
-             <div class="input-group">
-              <input type="text" class="form-control" v-on:keyup.13="executeSearch()" placeholder="Search" v-model="searchCriteria" aria-describedby="basic-addon2">
-              <div class="input-group-append">
-                <a class="input-group-text" id="basic-addon2" @click="executeSearch()"><i  class="fa fa-search"></i></a>
-              </div>
-            </div>
-             <div class="include-deleted-block" v-if="includeDeletedOption"><input type="checkbox" @change="executeSearch()" v-model="includeDeleted"/><span class="text-muted">Include Deleted</span></div>
-           </div>
-         </div>
+        <form-header :formTitle="md.listPageTitle" :helpText="md.listPageHelp" :newLink="newLink" :newLinkCaption="md.newFormTitle"/>
+        <no-results-alert :results="results" :loading="loading" :caption="emptyListCaption"/>
 
-         <no-results-alert :results="results" :loading="loading" :caption="emptyListCaption"/>
          <div class="table-wrapper" v-if="hasResults">
            <table class="table table-striped table-bordered display nowrap">
              <thead>
@@ -63,13 +45,17 @@
 
 <script>
 import APIService from '@/services/APIService'
+import PageHeader from '../components/PageHeader'
+import FormHeader from '../components/FormHeader'
 import NoResultsAlert from '../components/NoResultsAlert'
 
 export default {
   name: 'crud-list',
   props: ['globalState', 'breadcrumbCategory', 'resource', 'newRoute', 'clickRoute', 'searchEnabled', 'includeDeletedOption'],
   components: {
-    'no-results-alert': NoResultsAlert
+    'no-results-alert': NoResultsAlert,
+    'page-header': PageHeader,
+    'form-header': FormHeader
   },
   data: () => ({
     results: [],

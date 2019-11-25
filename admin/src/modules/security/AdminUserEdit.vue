@@ -4,7 +4,7 @@
     resource="security/admin/users"
     :id="id"
     breadcrumbCategory="Security"
-    listRoute="/admin-groups"
+    listRoute="/admin-users"
     :extraRoutes="extraRoutes"
     :session="session"
     :newForm="newForm"/>
@@ -14,7 +14,7 @@
 import CrudForm from '@/crud/CrudForm'
 
 export default {
-  name: 'admin-group-edit',
+  name: 'admin-user-edit',
   props: ['globalState', 'id', 'session'],
   components: {
     'crud-form': CrudForm

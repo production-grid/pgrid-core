@@ -1,45 +1,10 @@
 <template>
   <div class="slim-mainpanel">
     <div class="container">
-      <div class="slim-pageheader">
-        <ol class="breadcrumb slim-breadcrumb">
-          <li class="breadcrumb-item" v-if="breadcrumbCategory"><a href="#">{{breadcrumbCategory}}</a></li>
-          <li class="breadcrumb-item active" aria-current="page"  v-if="form.id || isSingleton">{{editFormTitle}}</li>
-          <li class="breadcrumb-item active" aria-current="page"  v-if="!form.id">{{md.newFormTitle}}</li>
-        </ol>
-        <h6 class="slim-pagetitle" v-if="!form.id">{{md.newFormTitle}}</h6>
-        <h6 class="slim-pagetitle" v-if="form.id || isSingleton">{{editFormTitle}}</h6>
-      </div><!-- slim-pageheader -->
+      <page-header :breadcrumbCategory="breadcrumbCategory" :pageTitle="pageTitle"/>
       <div class="section-wrapper">
-        <div v-if="!form.id">
-          <label class="section-title" v-if="!form.id">{{md.newFormTitle}}</label>
-          <p class="mg-b-20 mg-sm-b-40" v-if="md.newFormHelp">{{md.newFormHelp}}</p>
-       </div>
-       <div v-if="form.id  || isSingleton" class="row">
-         <div class="col-md-8">
-           <label class="section-title" v-if="form.id || isSingleton">{{editFormTitle}}</label>
-           <p class="mg-b-20 mg-sm-b-40" v-if="md.editFormHelp">{{md.editFormHelp}}</p>
-         </div>
-
-         <div class="col-md-4 mb-2" v-if="hasActionMenu">
-           <div id="actionMenu" class="dropdown show float-right">
-              <a class="btn btn-primary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                ACTIONS
-              </a>
-
-              <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuLink">
-                <router-link  v-for="result in extraRoutes" class="dropdown-item"  v-bind:key="result.route" :to="{ path: result.route, query: { id: form.id }}">{{result.caption}}</router-link>
-              </div>
-            </div>
-        </div>
-
-       </div>
-       <div class="alert alert-outline alert-success" role="alert" v-if="savedVisible">
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-        <strong>Done.</strong> Your changes have been saved.
-      </div><!-- alert -->
+       <form-header :formTitle="pageTitle" :extraRoutes="extraRoutes" :helpText="helpText" :id="id" />
+       <saved-alert :visible="savedVisible"/>
 
        <form role="form" v-on:submit="submit">
          <crud-panel
@@ -71,16 +36,7 @@
                </div>
              </div>
            </div>
-           <div class="mt-4">
-             <div class="progress" v-if="processing">
-               <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-             </div>
-             <div v-if="!processing">
-               <button type="button" class="btn btn-warning" data-test-id="canceButton" @click="cancelForm()" v-if="listRoute">CANCEL</button>
-               <button type="button" class="btn btn-danger mg-l-5" v-if="isDeletable" @click="deleteConfirm()">DELETE</button>
-               <button type="submit" class="btn btn-primary mg-l-5 float-right" data-test-id="submitButton">SAVE</button>
-             </div>
-           </div>
+           <form-button-panel :processing="processing" @delete="deleteConfirm" :isDeletable="isDeletable" :listRoute="listRoute"/>
          </form>
        </div><!-- section-wrapper -->
        <!-- /.content -->
@@ -101,13 +57,21 @@ import DeleteModal from '../modals/DeleteModal'
 import router from '../router'
 import modalService from '../services/ModalService'
 import CrudPanel from './CrudPanel'
+import PageHeader from '../components/PageHeader'
+import FormHeader from '../components/FormHeader'
+import SavedAlert from '../components/SavedAlert'
+import FormButtonPanel from '../components/FormButtonPanel'
 
 export default {
   name: 'crud-form-content-block',
   props: ['globalState', 'breadcrumbCategory', 'resource', 'id', 'listRoute', 'extraRoutes', 'mode', 'singleton', 'titleField', 'router', "columnStyle", "session", "newForm"],
   components: {
     'delete-modal': DeleteModal,
-    'crud-panel': CrudPanel
+    'crud-panel': CrudPanel,
+    'page-header': PageHeader,
+    'form-header': FormHeader,
+    'saved-alert': SavedAlert,
+    'form-button-panel': FormButtonPanel
   },
   data: () => ({
     md: {},
@@ -117,6 +81,18 @@ export default {
     processing: false
   }),
   computed: {
+    pageTitle: function () {
+      if (this.form.id || this.isSingleton) {
+        return this.editFormTitle
+      }
+      return this.md.newFormTitle
+    },
+    helpText: function () {
+      if (this.form.id || this.isSingleton) {
+        return this.md.editFormHelp
+      }
+      return this.md.newFormHelp
+    },
     effectiveColumnStyle: function () {
       if (!this.columnStyle) {
         return 'col-lg-6'

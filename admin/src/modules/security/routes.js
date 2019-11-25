@@ -1,6 +1,7 @@
 import Login from '@/modules/security/Login'
 import AdminUserList from '@/modules/security/AdminUserList'
 import AdminUserEdit from '@/modules/security/AdminUserEdit'
+import NewAdminUser from '@/modules/security/NewAdminUser'
 import TenantList from '@/modules/security/TenantList'
 import TenantEdit from '@/modules/security/TenantEdit'
 import AdminGroupList from '@/modules/security/AdminGroupList'
@@ -85,6 +86,12 @@ export default [
     path: '/admin-user-edit/:id',
     name: 'admin-user-edit',
     component: AdminUserEdit,
+    props: true
+  },
+  {
+    path: '/new-admin-user',
+    name: 'new-admin-user',
+    component: NewAdminUser,
     props: true
   }
 ]
