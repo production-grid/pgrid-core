@@ -1,5 +1,6 @@
 import Login from '@/modules/security/Login'
 import AdminUserList from '@/modules/security/AdminUserList'
+import AdminUserEdit from '@/modules/security/AdminUserEdit'
 import TenantList from '@/modules/security/TenantList'
 import TenantEdit from '@/modules/security/TenantEdit'
 import AdminGroupList from '@/modules/security/AdminGroupList'
@@ -7,7 +8,7 @@ import AdminGroupEdit from '@/modules/security/AdminGroupEdit'
 
 export default [
   {
-    path: '/users',
+    path: '/admin-users',
     name: 'AdminUserList',
     component: AdminUserList,
     props: true,
@@ -72,6 +73,18 @@ export default [
     path: '/admin-group-edit/:id',
     name: 'admin-group-edit',
     component: AdminGroupEdit,
+    props: true
+  },
+  {
+    path: '/admin-user-edit',
+    name: 'admin-user-edit',
+    component: AdminUserEdit,
+    props: true
+  },
+  {
+    path: '/admin-user-edit/:id',
+    name: 'admin-user-edit',
+    component: AdminUserEdit,
     props: true
   }
 ]

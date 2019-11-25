@@ -7,11 +7,13 @@ import (
 	"github.com/production-grid/pgrid-core/pkg/applications"
 	"github.com/production-grid/pgrid-core/pkg/database/relational"
 	"github.com/production-grid/pgrid-core/pkg/ids"
+	"github.com/production-grid/pgrid-core/pkg/logging"
 	"github.com/production-grid/pgrid-core/pkg/util"
 )
 
 const tableUsers = "users"
 const tableUserPerms = "user_perms"
+const tableUserAdminGroups = "user_admin_groups"
 
 //NewUser is the user factory function
 func NewUser() interface{} {
@@ -34,6 +36,7 @@ type User struct {
 	LastLogin    *time.Time `col:"last_login"`
 	RegDate      time.Time  `col:"reg_date"`
 	Permissions  []string
+	Groups       []string
 }
 
 // UserDTO models a user in a display friendly format.
@@ -49,6 +52,12 @@ type UserDTO struct {
 	LastLogin    string   `json:"lastLogin"`
 	RegDate      string   `json:"regDate"`
 	Permissions  []string `json:"permissions"`
+	Groups       []string `json:"groups"`
+}
+
+//Identifier returns the id of the dto
+func (dto *UserDTO) Identifier() string {
+	return dto.ID
 }
 
 // ToDTO converts this domain struct to a UI friendly version.
@@ -68,6 +77,8 @@ func (user *User) ToDTO(session *applications.Session) UserDTO {
 	} else {
 		dto.LastLogin = "N/A"
 	}
+	dto.Permissions = user.Permissions
+	dto.Groups = user.Groups
 
 	return dto
 
@@ -110,7 +121,7 @@ func (user *User) InitSession(currentSession *applications.Session) (*applicatio
 
 }
 
-func (user *User) resolveEffectivePermissions(session *applications.Session) {
+func (user *User) resolveEffectivePermissions(session *applications.Session) error {
 
 	permMap := make(map[string]bool)
 
@@ -121,7 +132,20 @@ func (user *User) resolveEffectivePermissions(session *applications.Session) {
 		}
 	}
 
+	//add group permission
+	if user.Groups != nil {
+		perms, err := user.LoadGroupPermissions(relational.REPLICA)
+		if err != nil {
+			return err
+		}
+		for _, code := range perms {
+			permMap[code] = true
+		}
+	}
+
 	session.EffectivePermissions = permMap
+
+	return nil
 
 }
 
@@ -173,6 +197,52 @@ func (finder *UserFinder) FindByEmailAddress(dbType string, email string) (*User
 	if err != nil {
 		return nil, err
 	}
+	user.Groups, err = user.LoadGroups(dbType)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+//FindByMobileNumber returns a user by their email address
+func (finder *UserFinder) FindByMobileNumber(dbType string, mobileNumber string) (*User, error) {
+	user := User{}
+	err := relational.FindOneByWhereClause(dbType, tableUsers, "where mobile_number = $1", &user, mobileNumber)
+	if err != nil {
+		if err == relational.ErrNoResults {
+			return nil, nil
+		}
+		return nil, err
+	}
+	user.Permissions, err = user.LoadPermissions(dbType)
+	if err != nil {
+		return nil, err
+	}
+	user.Groups, err = user.LoadGroups(dbType)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+//FindByLoginID returns a user by their mobile and email
+func (finder *UserFinder) FindByLoginID(dbType string, loginID string) (*User, error) {
+	user := User{}
+	err := relational.FindOneByWhereClause(dbType, tableUsers, "where email = $1 or mobile_number = $1", &user, loginID)
+	if err != nil {
+		if err == relational.ErrNoResults {
+			return nil, nil
+		}
+		return nil, err
+	}
+	user.Permissions, err = user.LoadPermissions(dbType)
+	if err != nil {
+		return nil, err
+	}
+	user.Groups, err = user.LoadGroups(dbType)
+	if err != nil {
+		return nil, err
+	}
 	return &user, nil
 }
 
@@ -190,6 +260,12 @@ func (finder *UserFinder) FindByID(dbType string, id string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	user.Groups, err = user.LoadGroups(dbType)
+	if err != nil {
+		return nil, err
+	}
+
 	return user, nil
 
 }
@@ -201,6 +277,43 @@ func (user *User) LoadPermissions(dbType string) ([]string, error) {
 
 }
 
+//LoadGroupPermissions loads permissions from the database
+func (user *User) LoadGroupPermissions(dbType string) ([]string, error) {
+
+	db := relational.ResolveDatabase(dbType)
+
+	sql := "select distinct gp.permission from admin_group_perms as gp join user_admin_groups as ug on (gp.admin_group_id = ug.group_id) where ug.user_id = $1"
+
+	logging.Traceln("SQL", sql)
+
+	rows, err := db.Query(sql, user.ID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	ids := make([]string, 0)
+
+	for rows.Next() {
+		var id *string
+		err := rows.Scan(&id)
+		if err != nil {
+			return nil, err
+		}
+		ids = append(ids, *id)
+	}
+
+	return ids, err
+
+}
+
+//LoadGroups loads groups from the database
+func (user *User) LoadGroups(dbType string) ([]string, error) {
+
+	return relational.LoadChildren(dbType, tableUserAdminGroups, "user_id", "group_id", user.ID)
+
+}
+
 // SaveWithTx saves a user to the database with a transaction context.
 func (user *User) SaveWithTx(tx *sql.Tx) (string, error) {
 	id, err := relational.SaveWithTx(tx, user, tableUsers)
@@ -209,6 +322,11 @@ func (user *User) SaveWithTx(tx *sql.Tx) (string, error) {
 		return "", err
 	}
 	err = relational.SaveChildren(tx, tableUserPerms, user, "user_id", "permission", user.Permissions)
+	if err != nil {
+		tx.Rollback()
+		return "", err
+	}
+	err = relational.SaveChildren(tx, tableUserAdminGroups, user, "user_id", "group_id", user.Groups)
 	if err != nil {
 		tx.Rollback()
 		return "", err

@@ -13,9 +13,9 @@ import (
 
 //LoginRequest models an API login request.
 type LoginRequest struct {
-	XSRF         string `json:"xsrf"`
-	EmailAddress string `json:"email"`
-	Password     string `json:"password"`
+	XSRF     string `json:"xsrf"`
+	LoginID  string `json:"loginId"`
+	Password string `json:"password"`
 }
 
 //SessionDTO models an interactive sesion
@@ -103,7 +103,7 @@ func PostLogin(session applications.Session, w http.ResponseWriter, req *http.Re
 		logging.LogJSON(request)
 
 		userFinder := UserFinder{}
-		user, err := userFinder.FindByEmailAddress(relational.REPLICA, request.EmailAddress)
+		user, err := userFinder.FindByLoginID(relational.REPLICA, request.LoginID)
 		if err != nil {
 			httputils.SendError(err, w)
 			return
@@ -115,7 +115,7 @@ func PostLogin(session applications.Session, w http.ResponseWriter, req *http.Re
 			return
 		}
 		if user.IsLocked {
-			httputils.SendJSON(httputils.Acknowledgement{Success: false, Error: "User account locked"}, w)
+			httputils.SendJSON(httputils.Acknowledgement{Success: false, Error: "User Account Locked"}, w)
 			return
 		}
 		expectedHash := crypto.DoubleHash{
@@ -138,7 +138,7 @@ func PostLogin(session applications.Session, w http.ResponseWriter, req *http.Re
 		}
 		http.SetCookie(w, &cookie)
 		httputils.SendJSON(httputils.Acknowledgement{Success: true, ID: secureSession.SessionKey}, w)
-		events.Dispatch(EventLogin, *secureSession, LoginEventMetaData{EMail: request.EmailAddress})
+		events.Dispatch(EventLogin, *secureSession, LoginEventMetaData{EMail: user.EMail})
 	}
 
 }

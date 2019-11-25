@@ -149,7 +149,7 @@ func SoftDeleteWithTx(tx *sql.Tx, domain interface{}, table string) error {
 	return err
 }
 
-func resolveDatabaseType(dbType string) *sql.DB {
+func ResolveDatabase(dbType string) *sql.DB {
 	switch dbType {
 	case REPLICA:
 		return Replica
@@ -179,7 +179,7 @@ func FindOneByWhereClause(dbType string, tableName string, whereClause string, t
 
 	logging.Tracef("SQL: %v", sql)
 
-	rows, err := resolveDatabaseType(dbType).Query(sql, params...)
+	rows, err := ResolveDatabase(dbType).Query(sql, params...)
 	defer rows.Close()
 
 	if err != nil {
@@ -224,7 +224,7 @@ func FindByWhereClause(dbType string, entityFactory EntityFactory, tableName str
 
 	results := make([]interface{}, 0)
 
-	rows, err := resolveDatabaseType(dbType).Query(sql, params...)
+	rows, err := ResolveDatabase(dbType).Query(sql, params...)
 	defer rows.Close()
 
 	if err != nil {
@@ -272,7 +272,7 @@ func FindAll(dbType string, entityFactory EntityFactory, tableName string, order
 
 	results := make([]interface{}, 0)
 
-	rows, err := resolveDatabaseType(dbType).Query(sql)
+	rows, err := ResolveDatabase(dbType).Query(sql)
 	defer rows.Close()
 
 	if err != nil {
@@ -304,7 +304,7 @@ func FindCount(dbType string, tableName string, target interface{}) (int, error)
 
 	logging.Traceln("SQL:", model.FindCountQuery)
 
-	rows, err := resolveDatabaseType(dbType).Query(model.FindCountQuery)
+	rows, err := ResolveDatabase(dbType).Query(model.FindCountQuery)
 
 	if err != nil {
 		return 0, err
@@ -335,7 +335,7 @@ func FindByID(dbType string, tableName string, id string, target interface{}) er
 
 	logging.Traceln("SQL:", model.FindByIDQuery, id)
 
-	rows, err := resolveDatabaseType(dbType).Query(model.FindByIDQuery, id)
+	rows, err := ResolveDatabase(dbType).Query(model.FindByIDQuery, id)
 
 	if err != nil {
 		return err
@@ -412,7 +412,7 @@ func LoadChildren(dbType string, tableName string, entityCol string, childCol st
 
 	selectQuery := "select " + childCol + " from " + tableName + " where " + entityCol + " = $1"
 
-	rows, err := resolveDatabaseType(dbType).Query(selectQuery, id)
+	rows, err := ResolveDatabase(dbType).Query(selectQuery, id)
 
 	if err != nil {
 		return nil, err

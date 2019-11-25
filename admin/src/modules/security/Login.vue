@@ -16,7 +16,7 @@
       <form @submit="processLogin">
           <div class="form-group">
             <label for="emailInput">E-Mail Address or Mobile Number</label>
-            <input type="text" class="form-control" id="emailInput" placeholder="Enter email or mobile number" v-model="email">
+            <input type="text" class="form-control" id="emailInput" placeholder="Enter email or mobile number" v-model="loginId">
           </div> <!-- form-group -->
           <div class="form-group">
             <label for="passwordInput">Password</label>
@@ -39,7 +39,7 @@ export default {
   name: 'HelloWorld',
   props: ['session'],
   data: () => ({
-    email: null,
+    loginId: null,
     password: null,
     errorMessage: null,
     loginProcessing: false
@@ -51,7 +51,7 @@ export default {
       self.errorMessage = null
       self.loginProcessing = true
       let req = {
-        email: this.email,
+        loginId: this.loginId,
         password: this.password
       }
       APIService.post('/api/security/login', req, function (response) {

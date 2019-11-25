@@ -15,7 +15,7 @@
              <div class="dropdown-menu dropdown-menu-right">
                <nav class="nav">
                  <router-link class="nav-link" to="/change-password"><i class="icon ion-ios-gear"></i> Change Password</router-link>
-                 <router-link class="nav-link" to="/logout"><i class="icon ion-forward"></i> Sign Out</router-link>
+                 <a class="nav-link" @click="logout"><i class="icon ion-forward"></i> Sign Out</a>
                </nav>
              </div><!-- dropdown-menu -->
            </div><!-- dropdown -->
@@ -59,6 +59,12 @@ export default {
     selectedMenu : 'operationsMenu'
   }),
   methods: {
+    logout: function () {
+      let self = this
+      APIService.post('/api/security/logout', {}, function () {
+        self.handleSessionInvalidation()
+      })
+    },
     handleSessionInvalidation: function () {
       let self = this
       APIService.get('/api/security/session', function (response) {

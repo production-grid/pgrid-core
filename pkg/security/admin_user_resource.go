@@ -40,17 +40,28 @@ func (rc *AdminUserResource) ToDTO(session *applications.Session, req *http.Requ
 //FromDTO reads values from a dto and copies them to the domain object, usually in response to form submission
 func (rc *AdminUserResource) FromDTO(session *applications.Session, req *http.Request, from interface{}, to interface{}) (interface{}, error) {
 
-	return to, nil
+	dto := from.(*UserDTO)
+	domain := to.(*User)
+
+	domain.FirstName = dto.FirstName
+	domain.LastName = dto.LastName
+	domain.EMail = dto.EMail
+	domain.MobileNumber = dto.MobileNumber
+	domain.IsLocked = dto.IsLocked
+	domain.Permissions = dto.Permissions
+	domain.Groups = dto.Groups
+
+	return domain, nil
 }
 
 //NewDTO creates a new instance of the dto struct.
 func (rc *AdminUserResource) NewDTO(session *applications.Session, req *http.Request) interface{} {
-	return UserDTO{}
+	return &UserDTO{}
 }
 
 //NewDomain creates a new instance of the domain struct.
 func (rc *AdminUserResource) NewDomain(session *applications.Session, req *http.Request) interface{} {
-	return User{}
+	return &User{}
 }
 
 //MetaData returns metadata about the this resource.  Used for rendering the UI.
@@ -59,7 +70,7 @@ func (rc *AdminUserResource) MetaData(session *applications.Session, req *http.R
 	crud := applications.NewCrudMetaData()
 	crud.ListPageTitle = "Users"
 	crud.ListPageHelp = "These are all the users currently registered in the system."
-	crud.NewFormTitle = "Invite User"
+	crud.NewFormTitle = "New User"
 	crud.ResourceName = "User"
 	crud.ResourceNamePlural = "Users"
 	crud.EditFormTitle = "User Settings"
@@ -71,18 +82,28 @@ func (rc *AdminUserResource) MetaData(session *applications.Session, req *http.R
 	crud.WithColumn(applications.CrudField{Caption: "Mobile", ID: "mobileNumber"})
 	crud.WithColumn(applications.CrudField{Caption: "Registration Date", ID: "regDate"})
 
-	/*
-		crud.WithField(applications.CrudField{Caption: "First Name", ID: "givenName", DataType: "string", Required: true, Mutable: true, Min: 2, Max: 64})
-		crud.WithField(applications.CrudField{Caption: "Last Name", ID: "surName", DataType: "string", Required: true, Mutable: true, Min: 2, Max: 64})
-		crud.WithField(applications.CrudField{Caption: "E-Mail Address", ID: "emailAddress", DataType: "string", Required: true, Mutable: true, Min: 2, Max: 64})
-		crud.WithField(applications.CrudField{Caption: "Mobile Number", ID: "mobileNumber", DataType: "string", Required: true, Mutable: true, Min: 2, Max: 64})
-		crud.WithField(applications.CrudField{Caption: "Locked", ID: "locked", DataType: "boolean", Required: false, Mutable: true})
-		crud.WithField(applications.CrudField{Caption: "Roles", ID: "roles", DataType: "adminRoles", Required: false, Mutable: true})
-		crud.WithField(applications.CrudField{Caption: "Registration Date", ID: "registrationDate", DataType: "string", Mutable: false})
-		crud.WithField(applications.CrudField{Caption: "Last Login Date", ID: "loginDate", DataType: "string", Mutable: false})
-		crud.WithField(applications.CrudField{Caption: "Deleted", ID: "deleted", DataType: "boolean", Mutable: false})
-		crud.WithField(applications.CrudField{Caption: "Password Locked", ID: "passwordLocked", DataType: "boolean", Mutable: true})
-	*/
+	crud.WithField(applications.CrudField{Caption: "First Name", ID: "firstName", DataType: "string", Required: true, Mutable: true, Min: 2, Max: 64})
+	crud.WithField(applications.CrudField{Caption: "Last Name", ID: "lastName", DataType: "string", Required: true, Mutable: true, Min: 2, Max: 64})
+	crud.WithField(applications.CrudField{Caption: "E-Mail Address", ID: "email", DataType: "string", Required: true, Mutable: true, Min: 2, Max: 64})
+	crud.WithField(applications.CrudField{Caption: "Mobile Number", ID: "mobileNumber", DataType: "string", Required: true, Mutable: true, Min: 2, Max: 64})
+	crud.WithField(applications.CrudField{Caption: "Locked", ID: "locked", DataType: "boolean", Required: false, Mutable: true})
+	crud.WithField(applications.CrudField{Caption: "Registration Date", ID: "regDate", DataType: "string", Mutable: false})
+	crud.WithField(applications.CrudField{
+		Caption:     "Groups",
+		ID:          "groups",
+		DataType:    "admin-groups",
+		Required:    false,
+		Mutable:     true,
+		ColumnStyle: "col-md-12",
+	})
+	crud.WithField(applications.CrudField{
+		Caption:     "Permissions",
+		ID:          "permissions",
+		DataType:    "admin-permissions",
+		Required:    false,
+		Mutable:     true,
+		ColumnStyle: "col-md-12",
+	})
 
 	return crud
 
@@ -99,15 +120,25 @@ func (rc *AdminUserResource) All(session *applications.Session, req *http.Reques
 
 //One returns a single domain object
 func (rc *AdminUserResource) One(session *applications.Session, req *http.Request, id string) (interface{}, error) {
-	return nil, nil
+	finder := UserFinder{}
+
+	return finder.FindByID(relational.REPLICA, id)
 }
 
 //Update creates or updates an entity, returning the entity after it's been created or upudated
 func (rc *AdminUserResource) Update(session *applications.Session, req *http.Request, dto interface{}, domain interface{}) (interface{}, error) {
-	return domain, nil
+	fullDomain := domain.(*User)
+	fullDomain.Save()
+
+	return fullDomain, nil
 }
 
 //Delete deletes an entity from the system, returning true if the operation succeeded
 func (rc *AdminUserResource) Delete(session *applications.Session, req *http.Request, domain interface{}) (bool, error) {
-	return false, nil
+
+	fullDomain := domain.(*User)
+	err := fullDomain.Delete()
+
+	return true, err
+
 }

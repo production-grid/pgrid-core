@@ -21,7 +21,8 @@
        <tenant-type-input v-if="field.dataType == 'tenant-type'" :value="value" :field="field" @input="emitValue" :mode="mode" :session="session"/>
        <permissions-input v-if="field.dataType == 'admin-permissions'" :value="value" :field="field" @input="emitValue" :mode="mode" :session="session" permSource="/api/security/admin/perms"/>
        <permissions-input v-if="field.dataType == 'tenant-permissions'" :value="value" :field="field" @input="emitValue" :mode="mode" :session="session" permSource="/api/security/tenant/perms"/>
-
+       <group-input v-if="field.dataType == 'admin-groups'" :value="value" :field="field" @input="emitValue" :mode="mode" :session="session" groupSource="/api/security/admin/groups"/>
+       <group-input v-if="field.dataType == 'tenant-groups'" :value="value" :field="field" @input="emitValue" :mode="mode" :session="session" groupSource="/api/security/tenant/groups"/>
        <!-- End input widgets -->
 
        <div class="help-block" v-if="field.help">{{field.help}}</div>
@@ -42,6 +43,7 @@ import CurrencyInput from '../widgets/CurrencyInput'
 import SubdomainInput from '../widgets/SubdomainInput'
 import TenantTypeInput from '../widgets/TenantTypeInput'
 import PermissionsInput from '../widgets/PermissionsInput'
+import GroupInput from '../widgets/GroupInput'
 
 export default {
   name: 'crud-input',
@@ -58,7 +60,8 @@ export default {
     'currency-input': CurrencyInput,
     'subdomain-input': SubdomainInput,
     'tenant-type-input': TenantTypeInput,
-    'permissions-input': PermissionsInput
+    'permissions-input': PermissionsInput,
+    'group-input': GroupInput
   },
   data: () => ({
   }),
